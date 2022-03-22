@@ -40,9 +40,10 @@ f_α2 = ∂_L_W1[1,2]
 f_γ1 = ∂_L_W2[1,1]
 f_γ2 = ∂_L_W2[2,1]
 
-∇L = System([f_α1, f_α2, f_γ1, f_γ2])
-result = solve(∇L)
-println(result)
+∇L = System([f_α1, f_α2, f_γ1, f_γ2], [α1, α2, γ1, γ2])
+
+# result = solve(∇L)
+# println(result)
 
 # catch e
 # 	println("Inside catch. Something is not right: ", e)
