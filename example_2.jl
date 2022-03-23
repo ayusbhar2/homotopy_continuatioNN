@@ -21,19 +21,10 @@ W = W2*W1
 
 # try
 
-sum_x = Matrix{Float64}(undef, 2, 5)
-sum_z = Matrix{Float64}(undef, 2, 5)
-
-for i = 1:5
-	# println(X[:, i])
-	sum_x = (X[:, i] * transpose(X[:, i]))
-	sum_z = (Z[:, i] * transpose(X[:, i]))
-end
-
 # compute ∂L(W)/Wi
 
-∂_L_W1 = transpose(W2) * (W * sum_x - sum_z)	# gradient matrix w.r.t. layer 1
-∂_L_W2 = (W * sum_x - sum_z) * transpose(W1)	# gradient matrix w.r.t. layer 2
+∂_L_W1 = transpose(W2) * (W * X * transpose(X) - Z * transpose(X)) + λ * W1	# gradient matrix w.r.t. layer 1
+∂_L_W2 = (W * X * transpose(X) - Z * transpose(X)) * transpose(W1)	+ λ * W2		# gradient matrix w.r.t. layer 2
 
 f_α1 = ∂_L_W1[1,1]
 f_α2 = ∂_L_W1[1,2]
@@ -42,10 +33,9 @@ f_γ2 = ∂_L_W2[2,1]
 
 ∇L = System([f_α1, f_α2, f_γ1, f_γ2], [α1, α2, γ1, γ2])
 
-# result = solve(∇L)
-# println(result)
+result = solve(∇L)
 
 # catch e
-# 	println("Inside catch. Something is not right: ", e)
+	# println("Inside catch. Something is not right: ", e)
+	# exit(code=0)
 # end
-
