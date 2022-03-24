@@ -1,5 +1,3 @@
 using HomotopyContinuation
 using LinearAlgebra
 
-
-
