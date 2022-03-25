@@ -1,9 +1,14 @@
+# localARGS = @isdefined(args) ? args : ARGS
+# @show localARGS
+
+
 include("utils.jl")
 import .Utils as utils
 
 using Distributions
 using HomotopyContinuation
 using Random
+
 
 Random.seed!(1234)
 
