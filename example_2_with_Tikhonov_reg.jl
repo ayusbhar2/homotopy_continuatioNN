@@ -1,7 +1,3 @@
-# localARGS = @isdefined(args) ? args : ARGS
-# @show localARGS
-
-
 include("utils.jl")
 import .Utils as utils
 
@@ -19,8 +15,11 @@ X = [[7 -8 3 -5 10];	# each column is a single example
 Z = [[9 9 -8 1 10];		# each column is a single target
 	 [10 3 -8 9 10]]
 
-U = Uniform(0,1)	# used for constructing the Tikhonov matrices
+a = 0; b= 1;
 
+H = 1; dx = 2; dy = 2; m = 5
+
+runs = 1
 
 # variables
 @var α1, α2, γ1, γ2
@@ -34,6 +33,7 @@ W = W2*W1
 
 
 # Tikhonov regularization constants
+U = Uniform(a, b)	# used for constructing the Tikhonov matrices
 Λ₁ = utils.generate_Tikhonov_matrix(U, size(W1))
 Λ₂ = utils.generate_Tikhonov_matrix(U, size(W2))
 
@@ -51,8 +51,15 @@ f_γ2 = ∂_L_W2[2,1]
 
 result = solve(∇L)
 
-println("CBB: ", utils.get_CBB(∇L))
-println("N_DM: ", convert(Int64, trunc(utils.get_N_DM(1, nvariables(∇L)))))
-println("N_R: ", utils.get_N_R(result))
-println("N_C: ", utils.get_N_C(result))
+cbb = utils.get_CBB(∇L)
+n_dm = convert(Int64, trunc(utils.get_N_DM(1, nvariables(∇L))))
+n_r = utils.get_N_R(result)
+n_c = utils.get_N_C(result)
+
+
+f = open("log.txt", "w")
+write(f, string("H \t dx \t dy \t m \t a \t b \t CBB \t N_DM \t N_R \t N_C\n"))
+write(f, string(H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", cbb, "\t", n_dm, "\t", n_r, "\t", n_c, "\n"))
+close(f)
+
 

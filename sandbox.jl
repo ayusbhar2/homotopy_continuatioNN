@@ -1,3 +1,0 @@
-using HomotopyContinuation
-using LinearAlgebra
-
