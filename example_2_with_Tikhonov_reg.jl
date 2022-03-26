@@ -8,20 +8,20 @@ using Random
 
 Random.seed!(1234)
 
-# Configurations
+# ARGS
+H = 1; dx = 2; dy = 2; m = 5; di = 1
+
+# configs
+a = 0; b= 1;
+runs = 2
+
+# module level constants
+U = Uniform(a, b)	# used for constructing the Tikhonov matrices
 X = [[7 -8 3 -5 10];	# each column is a single example
 	 [-7 10 6 -2 6]]
 
 Z = [[9 9 -8 1 10];		# each column is a single target
 	 [10 3 -8 9 10]]
-
-a = 0; b= 1;
-
-H = 1; dx = 2; dy = 2; m = 5
-
-runs = 2
-
-U = Uniform(a, b)	# used for constructing the Tikhonov matrices
 
 # variables
 @var α1, α2, γ1, γ2
