@@ -8,7 +8,7 @@ using Random
 
 Random.seed!(1234)
 
-# Constants
+# Configurations
 X = [[7 -8 3 -5 10];	# each column is a single example
 	 [-7 10 6 -2 6]]
 
@@ -20,6 +20,8 @@ a = 0; b= 1;
 H = 1; dx = 2; dy = 2; m = 5
 
 runs = 2
+
+U = Uniform(a, b)	# used for constructing the Tikhonov matrices
 
 # variables
 @var α1, α2, γ1, γ2
@@ -33,7 +35,6 @@ W = W2*W1
 
 for run = 1:runs
 	# Tikhonov regularization constants
-	U = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	Λ₁ = utils.generate_Tikhonov_matrix(U, size(W1))
 	Λ₂ = utils.generate_Tikhonov_matrix(U, size(W2))
 
