@@ -94,6 +94,26 @@ function generate_V_matrices(W_list)
 end
 
 
+# TODO: kwargs
+function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
+	p_list = Any[]
+	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
+	for i = 1:length(W_list)
+		∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
+		# println("∂L_Wᵢ :", size(∂L_Wᵢ))
+
+		v = vec(∂L_Wᵢ)
+		# println("v: ", v)
+		for p in v
+			# println("p: ", p)
+			push!(p_list, p)
+		end
+	end
+
+	return p_list
+end
+
+
 """ Generate a list of weight matrices (one per layer) given the architectural
 parameters of the neural network.
 

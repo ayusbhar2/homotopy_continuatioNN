@@ -72,9 +72,7 @@ function main()
 
 	# generate weight matrices
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
-	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
-	println("******** W: ", size(W))
-
+	
 	
 	f = open("log.txt", "w") # TODO: move this to a logging function
 	for run = 1:runs
@@ -90,18 +88,8 @@ function main()
 
 		
 		# Generate gratiend polynomials
-		p_list = Any[]
-		for i = 1:length(W_list)
-			∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
-			# println("∂L_Wᵢ :", size(∂L_Wᵢ))
+		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
 
-			v = vec(∂L_Wᵢ)
-			# println("v: ", v)
-			for p in v
-				# println("p: ", p)
-				push!(p_list, p)
-			end
-		end
 
 		# Generate the system of polynomials
 		∇L = System(p_list)	# variables are ordered alphabetically
