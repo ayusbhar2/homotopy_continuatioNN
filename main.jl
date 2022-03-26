@@ -79,10 +79,11 @@ function main()
 
 	W = W2*W1
 
+	f = open("log.txt", "w") # TODO: move this to a logging function
 	for run = 1:runs
 		# Tikhonov regularization constants
-		Λ₁ = utils.generate_Tikhonov_matrix(U, size(W1))
-		Λ₂ = utils.generate_Tikhonov_matrix(U, size(W2))
+		Λ₁ = utils.generate_Tikhonov_matrix(U, W1)
+		Λ₂ = utils.generate_Tikhonov_matrix(U, W2)
 
 
 		# Compute regularized gratiend polynomials
@@ -104,7 +105,6 @@ function main()
 		n_c = utils.get_N_C(result)
 
 
-		f = open("log.txt", "a")
 		write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t CBB \t N_DM \t N_R \t N_C\n"))
 		write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", cbb, "\t", n_dm, "\t", n_r, "\t", n_c, "\n"))
 		close(f)

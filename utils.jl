@@ -10,28 +10,43 @@ function _str_to_matrix(s, m, n)
 	return reshape(v, (m, n))
 end
 
+
 function get_CBB(F::System)
 	prod(degrees(F.expressions))
 end
+
 
 # function get_BKK(F::System)
 # 	#####
 # end
 
+
 function get_N_R(R::Result)
 	length(solutions(R; only_real=true))
 end
+
 
 function get_N_C(R::Result)
 	length(solutions(R)) - get_N_R(R)
 end
 
+
 function get_N_DM(H, n)
 	sqrt(2) * (H+1)^((n+1)/2)
 end
 
-function generate_Tikhonov_matrix(D, dims)
-	rand(D, dims)
+
+function generate_Tikhonov_matrix(D, W)
+	return rand(D, size(W))
+end
+
+
+function generate_Tikhonov_matrices(D, W_list)
+	Λ_list = Any[]
+	for W in W_list
+		push!(Λ_list, generate_Tikhonov_matrix(D, W))
+	end
+	return Λ_list
 end
 
 
@@ -83,7 +98,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			Wᵢ = _str_to_matrix(s, di, di)
 		end
 		W_list[i] = Wᵢ
-		println(string("i = ", i, " Wᵢ is ", size(Wᵢ)))
+		# println(string("i = ", i, " Wᵢ is ", size(Wᵢ)))
 	end
 
 	return W_list
