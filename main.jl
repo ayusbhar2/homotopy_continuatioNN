@@ -62,40 +62,49 @@ function main()
 	a = 0; b= 1;
 
 	# module level constants
-	U = Uniform(a, b)	# used for constructing the Tikhonov matrices
+	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = [[7 -8 3 -5 10];	# each column is a single example
 		 [-7 10 6 -2 6]]
 
-	Z = [[9 9 -8 1 10];		# each column is a single target
+	Y = [[9 9 -8 1 10];		# each column is a single target
 		 [10 3 -8 9 10]]
 
-	# variables
-	@var α1, α2, γ1, γ2
 
+	# generate weight matrices
+	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
+	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
+	println("******** W: ", size(W))
 
-	# weight matrices
-	W1 = [α1 α2]		# first layer with one neuron
-	W2 = [γ1; γ2]		# output layer with two neurons
-
-	W = W2*W1
-
+	
 	f = open("log.txt", "w") # TODO: move this to a logging function
 	for run = 1:runs
-		# Tikhonov regularization constants
-		Λ₁ = utils.generate_Tikhonov_matrix(U, W1)
-		Λ₂ = utils.generate_Tikhonov_matrix(U, W2)
 
+		# Generate Tikhonov regularization matrices
+		Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
 
-		# Compute regularized gratiend polynomials
-		∂_L_W1 = transpose(W2) * (W * X * transpose(X) - Z * transpose(X)) + Λ₁ .* W1	# gradient matrix w.r.t. layer 1
-		∂_L_W2 = (W * X * transpose(X) - Z * transpose(X)) * transpose(W1)	+ Λ₂ .* W2		# gradient matrix w.r.t. layer 2
+		# Generate U matrices
+		U_list = utils.generate_U_matrices(W_list)
 
-		f_α1 = ∂_L_W1[1,1]
-		f_α2 = ∂_L_W1[1,2]
-		f_γ1 = ∂_L_W2[1,1]
-		f_γ2 = ∂_L_W2[2,1]
+		# Generate V matrices
+		V_list = utils.generate_V_matrices(W_list)
 
-		∇L = System([f_α1, f_α2, f_γ1, f_γ2], [α1, α2, γ1, γ2])
+		
+		# Generate gratiend polynomials
+		p_list = Any[]
+		for i = 1:length(W_list)
+			∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
+			# println("∂L_Wᵢ :", size(∂L_Wᵢ))
+
+			v = vec(∂L_Wᵢ)
+			# println("v: ", v)
+			for p in v
+				# println("p: ", p)
+				push!(p_list, p)
+			end
+		end
+
+		# Generate the system of polynomials
+		∇L = System(p_list)	# variables are ordered alphabetically
 
 		result = solve(∇L)
 

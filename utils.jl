@@ -2,9 +2,13 @@ module Utils
 
 using Distributions
 using HomotopyContinuation
+using LinearAlgebra: I
 
 
-function _str_to_matrix(s, m, n)
+# function _parse_vars(s)
+
+
+function _varstring_to_matrix(s, m, n)
 	t = eval(Meta.parse(s))
 	v = collect(t)
 	return reshape(v, (m, n))
@@ -43,10 +47,50 @@ end
 
 function generate_Tikhonov_matrices(D, W_list)
 	Λ_list = Any[]
-	for W in W_list
-		push!(Λ_list, generate_Tikhonov_matrix(D, W))
+	for i =1:length(W_list)
+		Λᵢ = generate_Tikhonov_matrix(D, W_list[i])
+		println("Λ", i, " :", size(Λᵢ))
+		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
+end
+
+
+function generate_U_matrices(W_list)
+	U_list = Any[]
+	len = length(W_list)
+
+	for i = 1:len
+		if i == len
+			U = I
+			println("U", i, ": I")
+		else
+			U = reduce(*, reverse(W_list[i+1:len]))	# W_list contains matrices in reverse order
+			println("U", i, " :", size(U))
+		end
+		push!(U_list, U)
+	end
+
+	return U_list
+end
+
+
+function generate_V_matrices(W_list)
+	V_list = Any[]
+	len = length(W_list)
+
+	for i = 1:len
+		if i == 1
+			V = I
+			println("V", i, ": I")
+		else
+			V = reduce(*, reverse(W_list[1:i-1]))	# W_list contains matrices in reverse order
+			println("V", i, " :", size(V))
+		end
+		push!(V_list, V)
+	end
+
+	return V_list
 end
 
 
@@ -69,36 +113,34 @@ function generate_weight_matrices(H, dx, dy, m, di)
 
 	W_list = Vector{Matrix}(undef, H+1)
 	for i = 1:(H+1)
+		s = "@var "
 		if i == 1
 			# define di * dx new variables and fill them into Wᵢ
-			s = "@var "
 			for j = 1:di
 				for k = 1:dx
 					s = string(s,"x",i,j,k, " ")
 				end
 			end
-			Wᵢ = _str_to_matrix(s, di, dx)
+			Wᵢ = _varstring_to_matrix(s, di, dx)
 		elseif i == H+1
 			# define dy * di new variables and fill them into Wᵢ
-			s = "@var "
 			for j = 1:dy
 				for k = 1:di
 					s = string(s,"x",i,j,k, " ")
 				end
 			end
-			Wᵢ = _str_to_matrix(s, dy, di)
+			Wᵢ = _varstring_to_matrix(s, dy, di)
 		else
 			# define di * di new variables and fill them into Wᵢ
-			s = "@var "
 			for j = 1:di
 				for k = 1:di
 					s = string(s,"x",i,j,k, " ")
 				end
 			end
-			Wᵢ = _str_to_matrix(s, di, di)
+			Wᵢ = _varstring_to_matrix(s, di, di)
 		end
 		W_list[i] = Wᵢ
-		# println(string("i = ", i, " Wᵢ is ", size(Wᵢ)))
+		println(string("W", i," :", size(Wᵢ)))
 	end
 
 	return W_list
