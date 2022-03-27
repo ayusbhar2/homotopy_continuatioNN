@@ -2,6 +2,7 @@ include("utils.jl")
 import .Utils as utils
 
 using ArgParse
+using Dates
 using Distributions
 using HomotopyContinuation
 using Logging
@@ -46,7 +47,8 @@ end
 
 function main()
 
-	@info "starting process..."
+	t = now()
+	@info "starting process..." t
 
 	parsed_args = parse_commandline()
 	for (arg, val) in parsed_args
@@ -86,7 +88,7 @@ function main()
 
 		for run = 1:runs
 			println("\n#################################################### Starting run #: ", run)
-			@info "####### run: " run
+			@info "##################################################### run: " run
 
 			# Generate Tikhonov regularization matrices
 			println("\ngenerating Λᵢ matrices...")
