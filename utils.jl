@@ -31,12 +31,12 @@ end
 
 
 function get_N_C(R::Result)
-	length(solutions(R)) - get_N_R(R)
+	length(solutions(R; only_real=false))
 end
 
 
 function get_N_DM(H, n)
-	sqrt(2) * (H+1)^((n+1)/2)
+	sqrt(2) * (2*H+1)^((n+1)/2)
 end
 
 

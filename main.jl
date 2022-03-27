@@ -63,47 +63,60 @@ function main()
 
 	# module level constants
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
-	X = [[7 -8 3 -5 10];	# each column is a single example
-		 [-7 10 6 -2 6]]
-
-	Y = [[9 9 -8 1 10];		# each column is a single target
-		 [10 3 -8 9 10]]
+	X = randn(dx, m)		# each column is an data point
+	Y = randn(dy, m)		# each column is a target point
 
 
 	# generate weight matrices
+	println("generating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
-	
+
 	
 	f = open("log.txt", "w") # TODO: move this to a logging function
-	for run = 1:runs
+	try
+		for run = 1:runs
 
-		# Generate Tikhonov regularization matrices
-		Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+			# Generate Tikhonov regularization matrices
+			println("generating Λᵢ matrices...")
+			Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+			# println("a total of ", length(Λ_list), " matrices generated.")
 
-		# Generate U matrices
-		U_list = utils.generate_U_matrices(W_list)
+			# Generate U matrices
+			println("generating Uᵢ matrices...")
+			U_list = utils.generate_U_matrices(W_list)
+			# println("a total of ", length(U_list), " matrices generated.")
 
-		# Generate V matrices
-		V_list = utils.generate_V_matrices(W_list)
+			# Generate V matrices
+			println("generating Vᵢ matrices...")
+			V_list = utils.generate_V_matrices(W_list)
+			# println("a total of ", length(V_list), " matrices generated.")
 
-		
-		# Generate gratiend polynomials
-		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-
-
-		# Generate the system of polynomials
-		∇L = System(p_list)	# variables are ordered alphabetically
-
-		result = solve(∇L)
-
-		cbb = utils.get_CBB(∇L)
-		n_dm = convert(Int64, trunc(utils.get_N_DM(1, nvariables(∇L))))
-		n_r = utils.get_N_R(result)
-		n_c = utils.get_N_C(result)
+			# Generate gratiend polynomials
+			println("generating gradient polynomials...")
+			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+			println("total number of polynomials: ", length(p_list))
 
 
-		write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t CBB \t N_DM \t N_R \t N_C\n"))
-		write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", cbb, "\t", n_dm, "\t", n_r, "\t", n_c, "\n"))
+			# Generate the system of polynomials
+			∇L = System(p_list)	# variables are ordered alphabetically
+			n = nvariables(∇L)
+			println("total number of variables: ", n)
+
+			println("solving the polynomial system...")
+			result = solve(∇L)
+
+			cbb = utils.get_CBB(∇L)
+			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
+			n_r = utils.get_N_R(result)
+			n_c = utils.get_N_C(result)
+
+			println("writing output to file...")
+			write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t n \t CBB \t N_C \t N_DM \t N_R\n"))
+			write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", n, "\t", cbb, "\t", n_c, "\t", n_dm, "\t", n_r, "\n"))
+
+		end
+			
+	finally
 		close(f)
 	end
 
