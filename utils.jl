@@ -16,7 +16,7 @@ end
 
 
 function get_CBB(F::System)
-	prod(degrees(F.expressions))
+	prod(degrees(F))
 end
 
 

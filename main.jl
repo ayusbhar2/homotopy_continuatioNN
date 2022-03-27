@@ -78,7 +78,7 @@ function main()
 		write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t n \t CBB \t N_C \t N_DM \t N_R\n"))
 
 		for run = 1:runs
-			println("\n#### Starting run #: ", run)
+			println("\n#################################################### Starting run #: ", run)
 
 			# Generate Tikhonov regularization matrices
 			println("\ngenerating Λᵢ matrices...")
@@ -99,10 +99,12 @@ function main()
 			println("\ngenerating gradient polynomials...")
 			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
 			println("\ntotal number of polynomials: ", length(p_list))
-
-
+	
 			# Generate the system of polynomials
 			∇L = System(p_list)	# variables are ordered alphabetically
+			
+			println("\ndegrees of polynomials: ", degrees(∇L))
+			
 			n = nvariables(∇L)
 			println("\ntotal number of variables: ", n)
 
