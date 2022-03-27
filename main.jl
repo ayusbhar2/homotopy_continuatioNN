@@ -47,15 +47,10 @@ end
 
 function main()
 
-	t = now()
-	@info "starting process..." t
-
 	parsed_args = parse_commandline()
 	for (arg, val) in parsed_args
 		println(" $arg => $val")
 	end
-	@info "parsed_args: " parsed_args
-
 
 	# ARGS
 	H = parsed_args["H"];
@@ -65,81 +60,93 @@ function main()
 	di = parsed_args["di"];
 	runs = parsed_args["runs"];
 
-	# configs
-	a = 0; b= 1;
 
-	# module level constants
+
+	# run level constants
+	a = 0; b= 1;
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
-	@info "run level constants: " a b Unif X Y
+	SUFFIX = string("_H", H, "_dx", dx, "_dy", dy, "_m", m, "_di", di, "_a", a, "_b", b, ".txt")
 
-
-	# generate weight matrices
-	println("\ngenerating Wᵢ matrices...")
-	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
-	@info "W_list: " W_list
 
 	
-	f = open("output.txt", "w") # TODO: move this to a logging function
-	try
-		# add headings to outpug file
-		write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t n \t CBB \t N_C \t N_DM \t N_R\n"))
+	s = string("./logs/log", SUFFIX)
+	log = open(s, "w+")
+	simple_logger = ConsoleLogger(log, show_limited=false)
+	with_logger(simple_logger) do
 
-		for run = 1:runs
-			println("\n#################################################### Starting run #: ", run)
-			@info "##################################################### run: " run
+		t = now()
+		@info "starting process..." t
 
-			# Generate Tikhonov regularization matrices
-			println("\ngenerating Λᵢ matrices...")
-			Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-			@info "Λ_list: " Λ_list
+		# run level metadata
+		@info "run level constants: " parsed_args a b X Y
 
-			# Generate U matrices
-			println("\ngenerating Uᵢ matrices...")
-			U_list = utils.generate_U_matrices(W_list)
-			@info "U_list: " U_list
 
-			# Generate V matrices
-			println("\ngenerating Vᵢ matrices...")
-			V_list = utils.generate_V_matrices(W_list)
-			@info "V_list: " V_list
+		# generate weight matrices
+		println("\ngenerating Wᵢ matrices...")
+		W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
+		@info "W_list: " W_list
 
-			# Generate gratiend polynomials
-			println("\ngenerating gradient polynomials...")
-			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-			println("\ntotal number of polynomials: ", length(p_list))
-			@info "polynomials: " p_list
-	
-			# Generate the system of polynomials
-			∇L = System(p_list)	# variables are ordered alphabetically
-			
-			n = nvariables(∇L)
-			println("\ntotal number of variables: ", n)
+		
+		output = string("./output/output", SUFFIX)
+		f = open(output, "w")
+		try
+			# add headings to outpug file
+			write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t n \t CBB \t N_C \t N_DM \t N_R\n"))
 
-			println("\nsolving the polynomial system...")
-			result = solve(∇L)
-			@info "result: " result
+			for run = 1:runs
+				println("\n#################################################### Starting run #: ", run)
+				@info "##################################################### run: " run
 
-			cbb = utils.get_CBB(∇L)
-			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
-			n_r = utils.get_N_R(result)
-			n_c = utils.get_N_C(result)
+				# Generate Tikhonov regularization matrices
+				println("\ngenerating Λᵢ matrices...")
+				Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+				@info "Λ_list: " Λ_list
 
-			println("\nwriting output to file...")
-			write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", n, "\t", cbb, "\t", n_c, "\t", n_dm, "\t", n_r, "\n"))
+				# Generate U matrices
+				println("\ngenerating Uᵢ matrices...")
+				U_list = utils.generate_U_matrices(W_list)
+				@info "U_list: " U_list
+
+				# Generate V matrices
+				println("\ngenerating Vᵢ matrices...")
+				V_list = utils.generate_V_matrices(W_list)
+				@info "V_list: " V_list
+
+				# Generate gradient polynomials
+				println("\ngenerating gradient polynomials...")
+				p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+				println("\ntotal number of polynomials: ", length(p_list))
+				@info "polynomials: " p_list
+		
+				# Generate the system of polynomials
+				∇L = System(p_list)	# variables are ordered alphabetically
+				
+				n = nvariables(∇L)
+				println("\ntotal number of variables: ", n)
+
+				println("\nsolving the polynomial system...")
+				result = solve(∇L)
+				@info "result: " result
+
+				cbb = utils.get_CBB(∇L)
+				n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
+				n_r = utils.get_N_R(result)
+				n_c = utils.get_N_C(result)
+
+				println("\nwriting output to file...")
+				write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", n, "\t", cbb, "\t", n_c, "\t", n_dm, "\t", n_r, "\n"))
+			end
+		catch(e)
+			@error "Error while processing! " e
+		finally
+			close(f)
+			@info "processing complete." t
 		end
-	catch(e)
-		@error "Error while processing! " e
-	finally
-		close(f)
 	end
-
 end
 
-log = open("log.txt", "w+")
-simple_logger = ConsoleLogger(log, show_limited=false)
-with_logger(simple_logger) do
-	main()
-end
+main()
+
 
