@@ -4,6 +4,7 @@ import .Utils as utils
 using ArgParse
 using Distributions
 using HomotopyContinuation
+using Logging
 using Random
 
 
@@ -44,11 +45,15 @@ end
 
 
 function main()
+
+	@info "starting process..."
+
 	parsed_args = parse_commandline()
-    println("\nParsed args:")
-    for (arg,val) in parsed_args
-        println("  $arg  =>  $val")
-    end
+	for (arg, val) in parsed_args
+		println(" $arg => $val")
+	end
+	@info "parsed_args: " parsed_args
+
 
 	# ARGS
 	H = parsed_args["H"];
@@ -65,11 +70,13 @@ function main()
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
+	@info "run level constants: " a b Unif X Y
 
 
 	# generate weight matrices
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
+	@info "W_list: " W_list
 
 	
 	f = open("output.txt", "w") # TODO: move this to a logging function
@@ -79,37 +86,38 @@ function main()
 
 		for run = 1:runs
 			println("\n#################################################### Starting run #: ", run)
+			@info "####### run: " run
 
 			# Generate Tikhonov regularization matrices
 			println("\ngenerating Λᵢ matrices...")
 			Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-			# println("a total of ", length(Λ_list), " matrices generated.")
+			@info "Λ_list: " Λ_list
 
 			# Generate U matrices
 			println("\ngenerating Uᵢ matrices...")
 			U_list = utils.generate_U_matrices(W_list)
-			# println("a total of ", length(U_list), " matrices generated.")
+			@info "U_list: " U_list
 
 			# Generate V matrices
 			println("\ngenerating Vᵢ matrices...")
 			V_list = utils.generate_V_matrices(W_list)
-			# println("a total of ", length(V_list), " matrices generated.")
+			@info "V_list: " V_list
 
 			# Generate gratiend polynomials
 			println("\ngenerating gradient polynomials...")
 			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
 			println("\ntotal number of polynomials: ", length(p_list))
+			@info "polynomials: " p_list
 	
 			# Generate the system of polynomials
 			∇L = System(p_list)	# variables are ordered alphabetically
-			
-			println("\ndegrees of polynomials: ", degrees(∇L))
 			
 			n = nvariables(∇L)
 			println("\ntotal number of variables: ", n)
 
 			println("\nsolving the polynomial system...")
 			result = solve(∇L)
+			@info "result: " result
 
 			cbb = utils.get_CBB(∇L)
 			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
@@ -118,14 +126,18 @@ function main()
 
 			println("\nwriting output to file...")
 			write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", n, "\t", cbb, "\t", n_c, "\t", n_dm, "\t", n_r, "\n"))
-
 		end
-			
+	catch(e)
+		@error "Error while processing! " e
 	finally
 		close(f)
 	end
 
 end
 
-main()
+log = open("log.txt", "w+")
+simple_logger = ConsoleLogger(log, show_limited=false)
+with_logger(simple_logger) do
+	main()
+end
 
