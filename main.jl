@@ -127,8 +127,16 @@ function main()
 				println("\ntotal number of variables: ", n)
 
 				println("\nsolving the polynomial system...")
-				result = solve(∇L)
+				retval = @timed solve(∇L)	# retval contains the result along with stats
+				result = retval.value
+				elapsed_time = retval.time
+
 				@info "result: " result
+				@info "elapsed time: " elapsed_time
+
+				if isnothing(result)
+					throw("Solve returned nothing!")
+				end
 
 				cbb = utils.get_CBB(∇L)
 				n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))

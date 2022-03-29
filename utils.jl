@@ -5,8 +5,6 @@ using HomotopyContinuation
 using LinearAlgebra: I
 
 
-# function _parse_vars(s)
-
 
 function _varstring_to_matrix(s, m, n)
 	t = eval(Meta.parse(s))
