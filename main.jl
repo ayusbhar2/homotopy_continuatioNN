@@ -15,30 +15,43 @@ function parse_commandline()
     s = ArgParseSettings()
 
     @add_arg_table s begin
-        "H"
+        "--H"
             help = "number of hidden layers"
             arg_type = Int
-            required = true
-        "dx"
+            default = 1
+        "--dx"
             help = "length of input vector"
             arg_type = Int
-            required = true
-        "dy"
+            default = 2
+        "--dy"
             help = "length of output vector"
             arg_type = Int
-            required = true
-        "m"
+            default = 2
+        "--m"
             help = "number of examples in training data"
             arg_type = Int
-            required = true
-        "di"
+            default = 5
+        "--di"
             help = "(fixed) number of neurons in each hidden layer"
             arg_type = Int
-            required = true
+            default = 1
+        "--a"
+        	help = "value of a in Uniform(a, b)"
+            arg_type = Int
+            default = 0
+        "--b"
+        	help = "value of b in Uniform(a, b)"
+            arg_type = Int
+            default = 1
+        "--reg"
+        	help = "regularized? y/n"
+        	arg_type = String
+        	default = "y"
         "--runs", "-r"
             help = "number of trials"
             arg_type = Int
             default = 1
+
     end
 
     return parse_args(s)
@@ -58,12 +71,14 @@ function main()
 	dy = parsed_args["dy"];
 	m = parsed_args["m"];
 	di = parsed_args["di"];
+	a = parsed_args["a"];
+	b = parsed_args["b"];
+	reg = parsed_args["reg"];
 	runs = parsed_args["runs"];
 
 
 
 	# run level constants
-	a = 0; b= 1;
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
@@ -100,9 +115,15 @@ function main()
 				@info "##################################################### run: " run
 
 				# Generate Tikhonov regularization matrices
-				println("\ngenerating Λᵢ matrices...")
-				Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-				@info "Λ_list: " Λ_list
+				if reg == "y"
+					println("\ngenerating Λᵢ matrices...")
+					Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+					@info "Λ_list: " Λ_list
+				else
+					println("\nsetting Λᵢ matrices to 0...")
+					Λ_list = utils.generate_zero_matrices(W_list)
+					@info "Λ_list: " Λ_list
+				end
 
 				# Generate U matrices
 				println("\ngenerating Uᵢ matrices...")

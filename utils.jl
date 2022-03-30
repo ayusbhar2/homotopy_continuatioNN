@@ -53,6 +53,16 @@ function generate_Tikhonov_matrices(D, W_list)
 	return Λ_list
 end
 
+function generate_zero_matrices(W_list)
+	Λ_list = Any[]
+	for i =1:length(W_list)
+		Λᵢ = zeros(size(W_list[i]))
+		println("Λ", i, " :", size(Λᵢ))
+		push!(Λ_list, Λᵢ)
+	end
+	return Λ_list
+end
+
 
 function generate_U_matrices(W_list)
 	U_list = Any[]
@@ -136,7 +146,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			# define di * dx new variables and fill them into Wᵢ
 			for j = 1:di
 				for k = 1:dx
-					s = string(s,"x",i,j,k, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, di, dx)
@@ -144,7 +154,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			# define dy * di new variables and fill them into Wᵢ
 			for j = 1:dy
 				for k = 1:di
-					s = string(s,"x",i,j,k, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, dy, di)
@@ -152,7 +162,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			# define di * di new variables and fill them into Wᵢ
 			for j = 1:di
 				for k = 1:di
-					s = string(s,"x",i,j,k, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, di, di)
