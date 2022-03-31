@@ -44,6 +44,12 @@ end
 
 
 function generate_Tikhonov_matrices(D, W_list)
+
+	# Λ_list = Any[]
+	# @var γ₁ γ₂ γ₃ γ₄
+	# push!(Λ_list, [γ₁ γ₂])
+	# push!(Λ_list, [γ₃; γ₄])
+
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		Λᵢ = generate_Tikhonov_matrix(D, W_list[i])

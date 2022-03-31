@@ -77,11 +77,21 @@ function main()
 	runs = parsed_args["runs"];
 
 
+	# # one time for generating parametrized polynomials
+	# @var α₁ α₂ α₃ α₄ α₅ α₆ α₇ α₈ α₉ α₁₀ β₁ β₂ β₃ β₄ β₅ β₆ β₇ β₈ β₉ β₁₀
+	# X = [α₁ α₂ α₃ α₄ α₅; α₆ α₇ α₈ α₉ α₁₀]
+	# Y = [β₁ β₂ β₃ β₄ β₅; β₆ β₇ β₈ β₉ β₁₀]
+
+	# Example 2 of paper
+	# X = [7 -8 3 -5 10; -7 10 6 -2 6]
+	# Y = [9 9 -8 1 10; 10 3 -8 9 10]
 
 	# run level constants
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
+
+
 	SUFFIX = string("_H", H, "_dx", dx, "_dy", dy, "_m", m, "_di", di, "_a", a, "_b", b, ".txt")
 
 
