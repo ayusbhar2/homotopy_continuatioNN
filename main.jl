@@ -28,8 +28,6 @@ map = Dict("CBB" => utils.get_CBB,
 
 params = string("No.,", "di,", "H,", "m,", "dx,", "dy,", "a,", "b,", "n,")
 
-
-# generate header for output file
 header = ""
 for p in params
 	global header = header * p
@@ -37,7 +35,7 @@ end
 for k in keys(map)
 	 global header = header * k * ","
 end
-
+header = chop(header) * "\n"
 
 
 function parse_commandline()
@@ -133,6 +131,9 @@ function main()
 	@info "W_list: " W_list
 
 
+
+	f = open("./output/output.csv", "w")
+	write(f, header)
 	try
 		runs = []
 		for run = 1:runcount
@@ -197,6 +198,7 @@ function main()
 	catch(e)
 		@error "Error while processing! " e
 	finally
+		close(f)
 		@info "processing complete."
 	end
 
