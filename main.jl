@@ -7,6 +7,7 @@ using Distributions
 using HomotopyContinuation
 using JSON3
 using Logging
+using OrderedCollections
 using Random
 
 
@@ -18,24 +19,28 @@ simple_logger = ConsoleLogger(io, show_limited=false)
 global_logger(simple_logger)
 
 
-# map metric to corresponding function
-map = Dict("CBB" => utils.get_CBB,
-		   "BKK" => utils.get_BKK,
-		   "N_C" => utils.get_N_C,
-		   "N_DM" => utils.get_N_DM,
-		   "N_R" => utils.get_N_R
+map = OrderedDict(
+		"n" => -1,
+		"CBB" => -1,
+		"BKK" => -1,
+		"N_C" => -1,
+		"N_DM" => -1,
+		"N_R" => -1
 	)
 
-params = string("No.,", "di,", "H,", "m,", "dx,", "dy,", "a,", "b,", "n,")
+params = ("reg", "di", "H", "m", "dx", "dy", "a", "b")
 
-header = ""
+
+# prepare header for output file
+header = "No.,"  # first column heading
 for p in params
-	global header = header * p
+	global header = header * p * ","
 end
 for k in keys(map)
 	 global header = header * k * ","
 end
 header = chop(header) * "\n"
+
 
 
 function parse_commandline()
@@ -113,7 +118,7 @@ function main()
 	# X = [7 -8 3 -5 10; -7 10 6 -2 6]
 	# Y = [9 9 -8 1 10; 10 3 -8 9 10]
 
-	# run level constants
+	# batch level constants
 	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
@@ -121,8 +126,8 @@ function main()
 
 	@info "starting process..."
 
-	# run level metadata
-	@info "run level constants: " parsed_args a b X Y
+	# batch level metadata
+	@info "batch level constants: " parsed_args a b X Y
 
 
 	# generate weight matrices
@@ -133,7 +138,8 @@ function main()
 
 
 	f = open("./output/output.csv", "w")
-	write(f, header)
+	write(f, header)	# write header to output
+	println(header)
 	try
 		runs = []
 		for run = 1:runcount
@@ -167,7 +173,7 @@ function main()
 			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
 			println("\ntotal number of polynomials: ", length(p_list))
 			@info "polynomials: " p_list
-	
+
 			# Generate the system of polynomials
 			∇L = System(p_list)	# variables are ordered alphabetically
 			n = nvariables(∇L)
@@ -175,7 +181,7 @@ function main()
 			println("\nsolving the polynomial system...")
 
 
-			# Solve the system and retrieve results
+			# Solve the system
 			retval = @timed solve(∇L)	# retval contains the result along with stats
 			result = retval.value
 			run_time = retval.time
@@ -187,12 +193,34 @@ function main()
 				throw("Solve returned nothing!")
 			end
 
+
+			# Collect results
+			map["n"] = n
+
 			cbb = utils.get_CBB(∇L)
-			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
-			n_r = utils.get_N_R(result)
+			map["CBB"] = cbb
+
 			n_c = utils.get_N_C(result)
+			map["N_C"] = n_c
+
+			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
+			map["N_DM"] = n_dm
+
+			n_r = utils.get_N_R(result)
+			map["N_R"] = n_r
 
 
+			# write row to output
+			row = string(run) * "," #  run number
+			for p in params
+				row = row * string(parsed_args[p]) * ","
+			end
+			for (k, v) in map		# key order is fixed
+				 row = row * string(v) * ","
+			end
+			row = chop(row) * "\n"
+			println(row)
+			write(f, row)
 		end
 
 	catch(e)
