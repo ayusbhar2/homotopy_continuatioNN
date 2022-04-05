@@ -12,10 +12,32 @@ using Random
 
 Random.seed!(1234)
 
-s = "./logs/log.txt"
-io = open(s, "w+")
+log = "./logs/log.txt"
+io = open(log, "w+")
 simple_logger = ConsoleLogger(io, show_limited=false)
 global_logger(simple_logger)
+
+
+# map metric to corresponding function
+map = Dict("CBB" => utils.get_CBB,
+		   "BKK" => utils.get_BKK,
+		   "N_C" => utils.get_N_C,
+		   "N_DM" => utils.get_N_DM,
+		   "N_R" => utils.get_N_R
+	)
+
+params = string("No.,", "di,", "H,", "m,", "dx,", "dy,", "a,", "b,", "n,")
+
+
+# generate header for output file
+header = ""
+for p in params
+	global header = header * p
+end
+for k in keys(map)
+	 global header = header * k * ","
+end
+
 
 
 function parse_commandline()
@@ -83,9 +105,6 @@ function main()
 	reg = parsed_args["reg"];
 	runcount = parsed_args["runcount"];
 
-	batch_output = Dict()
-	batch_output["params"] = Dict(parsed_args)
-	
 
 	# # one time for generating parametrized polynomials
 	# @var α₁ α₂ α₃ α₄ α₅ α₆ α₇ α₈ α₉ α₁₀ β₁ β₂ β₃ β₄ β₅ β₆ β₇ β₈ β₉ β₁₀
@@ -172,15 +191,7 @@ function main()
 			n_r = utils.get_N_R(result)
 			n_c = utils.get_N_C(result)
 
-			run_output = Dict([("cbb", cbb), ("n_dm", n_dm), ("n_r", n_r), ("n_c", n_c)])
-			push!(runs, run_output) # append output for each run
-		end
 
-		# write batch output to file
-		batch_output["runs"] = runs
-
-		open("./output/output.json", "w") do io
-    		JSON3.write(io, batch_output)
 		end
 
 	catch(e)

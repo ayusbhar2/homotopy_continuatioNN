@@ -18,9 +18,9 @@ function get_CBB(F::System)
 end
 
 
-# function get_BKK(F::System)
-# 	#####
-# end
+function get_BKK(F::System)
+
+end
 
 
 function get_N_R(R::Result)
@@ -137,7 +137,7 @@ H (Int)	: Number of hidden layers in the network
 dx (Int): Length of the input vector
 dy (Int): Length of the output vector
 m (Int)	: Number of examples
-di (Int): (Fixed) number of neurons in all hidden layers
+di (Int): (Fixed)	 number of neurons in all hidden layers
 
 Output:
 
