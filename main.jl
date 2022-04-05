@@ -5,6 +5,7 @@ using ArgParse
 using Dates
 using Distributions
 using HomotopyContinuation
+using JSON3
 using Logging
 using Random
 
@@ -53,7 +54,7 @@ function parse_commandline()
         	help = "regularized? y/n"
         	arg_type = String
         	default = "y"
-        "--runs", "-r"
+        "--runcount"
             help = "number of trials"
             arg_type = Int
             default = 1
@@ -80,8 +81,11 @@ function main()
 	a = parsed_args["a"];
 	b = parsed_args["b"];
 	reg = parsed_args["reg"];
-	runs = parsed_args["runs"];
+	runcount = parsed_args["runcount"];
 
+	batch_output = Dict()
+	batch_output["params"] = Dict(parsed_args)
+	
 
 	# # one time for generating parametrized polynomials
 	# @var α₁ α₂ α₃ α₄ α₅ α₆ α₇ α₈ α₉ α₁₀ β₁ β₂ β₃ β₄ β₅ β₆ β₇ β₈ β₉ β₁₀
@@ -109,16 +113,13 @@ function main()
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
 	@info "W_list: " W_list
 
-	
-	output = "./output/output.txt"
-	f = open(output, "w")
-	try
-		# add headings to outpug file
-		write(f, string("No. \t H \t dx \t dy \t m \t a \t b \t n \t CBB \t N_C \t N_DM \t N_R\n"))
 
-		for run = 1:runs
+	try
+		runs = []
+		for run = 1:runcount
 			println("\nStarting run #: ", run)
 			@info "Starting run #: " run
+
 
 			# Generate Tikhonov regularization matrices
 			if reg == "y"
@@ -153,6 +154,8 @@ function main()
 			println("\ntotal number of variables: ", n)
 			println("\nsolving the polynomial system...")
 
+
+			# Solve the system and retrieve results
 			retval = @timed solve(∇L)	# retval contains the result along with stats
 			result = retval.value
 			run_time = retval.time
@@ -169,19 +172,24 @@ function main()
 			n_r = utils.get_N_R(result)
 			n_c = utils.get_N_C(result)
 
-			println("\nwriting output to file...")
-			write(f, string(run, "\t", H, "\t", dx, "\t", dy, "\t", m, "\t", a, "\t", b, "\t", n, "\t", cbb, "\t", n_c, "\t", n_dm, "\t", n_r, "\n"))
+			run_output = Dict([("cbb", cbb), ("n_dm", n_dm), ("n_r", n_r), ("n_c", n_c)])
+			push!(runs, run_output) # append output for each run
+		end
+
+		# write batch output to file
+		batch_output["runs"] = runs
+
+		open("./output/output.json", "w") do io
+    		JSON3.write(io, batch_output)
 		end
 
 	catch(e)
 		@error "Error while processing! " e
 	finally
-		close(f)
 		@info "processing complete."
 	end
 
 end
-
 
 response = @timed main()
 @info "total elapsed time: " response.time
