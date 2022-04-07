@@ -5,7 +5,6 @@ using ArgParse
 using Dates
 using Distributions
 using HomotopyContinuation
-using JSON3
 using Logging
 using OrderedCollections
 using Random
