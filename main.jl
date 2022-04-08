@@ -5,7 +5,6 @@ using ArgParse
 using Dates
 using Distributions
 using HomotopyContinuation
-using JSON3
 using Logging
 using OrderedCollections
 using Random
@@ -139,7 +138,6 @@ function main()
 
 	f = open("./output/output.csv", "w")
 	write(f, header)	# write header to output
-	println(header)
 	try
 		runs = []
 		for run = 1:runcount
@@ -219,7 +217,6 @@ function main()
 				 row = row * string(v) * ","
 			end
 			row = chop(row) * "\n"
-			println(row)
 			write(f, row)
 		end
 
