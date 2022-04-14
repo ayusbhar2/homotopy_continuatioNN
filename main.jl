@@ -180,7 +180,7 @@ function main()
 
 
 			# Solve the system
-			retval = @timed solve(∇L)	# retval contains the result along with stats
+			retval = @timed solve(∇L; threading=true)	# retval contains the result along with stats
 			result = retval.value
 			run_time = retval.time
 
