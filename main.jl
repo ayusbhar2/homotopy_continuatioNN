@@ -5,10 +5,13 @@ using ArgParse
 using Dates
 using Distributions
 using HomotopyContinuation
+using JSON
 using Logging
 using OrderedCollections
 using Random
 
+
+CONFIG_FILE = "config.json"
 
 Random.seed!(1234)
 
@@ -41,57 +44,56 @@ end
 header = chop(header) * "\n"
 
 
+# function parse_commandline()
+#     s = ArgParseSettings()
 
-function parse_commandline()
-    s = ArgParseSettings()
+#     @add_arg_table s begin
+#         "--H"
+#             help = "number of hidden layers"
+#             arg_type = Int
+#             default = 1
+#         "--dx"
+#             help = "length of input vector"
+#             arg_type = Int
+#             default = 2
+#         "--dy"
+#             help = "length of output vector"
+#             arg_type = Int
+#             default = 2
+#         "--m"
+#             help = "number of examples in training data"
+#             arg_type = Int
+#             default = 5
+#         "--di"
+#             help = "(fixed) number of neurons in each hidden layer"
+#             arg_type = Int
+#             default = 1
+#         "--a"
+#         	help = "value of a in Uniform(a, b)"
+#             arg_type = Int
+#             default = 0
+#         "--b"
+#         	help = "value of b in Uniform(a, b)"
+#             arg_type = Int
+#             default = 1
+#         "--reg"
+#         	help = "regularized? y/n"
+#         	arg_type = String
+#         	default = "y"
+#         "--runcount"
+#             help = "number of trials"
+#             arg_type = Int
+#             default = 1
 
-    @add_arg_table s begin
-        "--H"
-            help = "number of hidden layers"
-            arg_type = Int
-            default = 1
-        "--dx"
-            help = "length of input vector"
-            arg_type = Int
-            default = 2
-        "--dy"
-            help = "length of output vector"
-            arg_type = Int
-            default = 2
-        "--m"
-            help = "number of examples in training data"
-            arg_type = Int
-            default = 5
-        "--di"
-            help = "(fixed) number of neurons in each hidden layer"
-            arg_type = Int
-            default = 1
-        "--a"
-        	help = "value of a in Uniform(a, b)"
-            arg_type = Int
-            default = 0
-        "--b"
-        	help = "value of b in Uniform(a, b)"
-            arg_type = Int
-            default = 1
-        "--reg"
-        	help = "regularized? y/n"
-        	arg_type = String
-        	default = "y"
-        "--runcount"
-            help = "number of trials"
-            arg_type = Int
-            default = 1
+#     end
 
-    end
-
-    return parse_args(s)
-end
+#     return parse_args(s)
+# end
 
 
 function main()
 
-	parsed_args = parse_commandline()
+	parsed_args = JSON.parsefile(CONFIG_FILE)
 	for (arg, val) in parsed_args
 		println(" $arg => $val")
 	end
@@ -134,6 +136,15 @@ function main()
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
 	@info "W_list: " W_list
 
+	# Generate U matrices
+	println("\ngenerating Uᵢ matrices...")
+	U_list = utils.generate_U_matrices(W_list)
+	@info "U_list: " U_list
+
+	# Generate V matrices
+	println("\ngenerating Vᵢ matrices...")
+	V_list = utils.generate_V_matrices(W_list)
+	@info "V_list: " V_list
 
 
 	f = open("./output/output.csv", "w")
@@ -155,16 +166,6 @@ function main()
 				Λ_list = utils.generate_zero_matrices(W_list)
 				@info "Λ_list: " Λ_list
 			end
-
-			# Generate U matrices
-			println("\ngenerating Uᵢ matrices...")
-			U_list = utils.generate_U_matrices(W_list)
-			@info "U_list: " U_list
-
-			# Generate V matrices
-			println("\ngenerating Vᵢ matrices...")
-			V_list = utils.generate_V_matrices(W_list)
-			@info "V_list: " V_list
 
 			# Generate gradient polynomials
 			println("\ngenerating gradient polynomials...")
