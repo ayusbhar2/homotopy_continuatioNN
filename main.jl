@@ -44,53 +44,6 @@ end
 header = chop(header) * "\n"
 
 
-# function parse_commandline()
-#     s = ArgParseSettings()
-
-#     @add_arg_table s begin
-#         "--H"
-#             help = "number of hidden layers"
-#             arg_type = Int
-#             default = 1
-#         "--dx"
-#             help = "length of input vector"
-#             arg_type = Int
-#             default = 2
-#         "--dy"
-#             help = "length of output vector"
-#             arg_type = Int
-#             default = 2
-#         "--m"
-#             help = "number of examples in training data"
-#             arg_type = Int
-#             default = 5
-#         "--di"
-#             help = "(fixed) number of neurons in each hidden layer"
-#             arg_type = Int
-#             default = 1
-#         "--a"
-#         	help = "value of a in Uniform(a, b)"
-#             arg_type = Int
-#             default = 0
-#         "--b"
-#         	help = "value of b in Uniform(a, b)"
-#             arg_type = Int
-#             default = 1
-#         "--reg"
-#         	help = "regularized? y/n"
-#         	arg_type = String
-#         	default = "y"
-#         "--runcount"
-#             help = "number of trials"
-#             arg_type = Int
-#             default = 1
-
-#     end
-
-#     return parse_args(s)
-# end
-
-
 function main()
 
 	parsed_args = JSON.parsefile(CONFIG_FILE)
@@ -149,153 +102,123 @@ function main()
 	V_list = utils.generate_V_matrices(W_list)
 	@info "V_list: " V_list
 
-	# Generate Tikhonov regularization matrices as parameters
-	if reg == "y"
-		println("\ngenerating start parameters Λᵢ...")
-		Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+
+	if reg == "y"								# TODO: make this a top level check
+		# Generate parameter matrices
+		println("\ndefining parameters Λᵢ...")
+		Λ_list = utils.generate_parameter_matrices(W_list)
 		@info "Λ_list: " Λ_list
-	else
-		println("\nsetting start parameters Λᵢ to 0...")
-		Λ_list = utils.generate_zero_matrices(W_list)
-		@info "Λ_list: " Λ_list
-	end
 
-	# Generate gradient polynomials
-	println("\ngenerating gradient polynomials...")
-	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-	println("\ntotal number of polynomials: ", length(p_list))
-	@info "polynomials: " p_list
+		# Generate gradient polynomials
+		println("\ngenerating gradient polynomials...")
+		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+		println("\ntotal number of polynomials: ", length(p_list))
+		@info "polynomials: " p_list
 
-	# Generate the system of polynomials
-	∇L = System(p_list)	# variables are ordered alphabetically
-	n = nvariables(∇L)
-	println("\ntotal number of variables: ", n)
-	println("\nsolving the polynomial system...")
+		# Generate the system of polynomials
+		parameters=collect(Iterators.flatten(Λ_list))
+		∇L = System(p_list; parameters=parameters)	# variables are ordered alphabetically
+		n = nvariables(∇L)
+		println("\ntotal number of variables: ", n)
+		println("\nsolving the polynomial system...")
 
-	# Solve the system
-	retval = @timed solve(∇L; threading=true)	# retval contains the result along with stats
-	result = retval.value
-	run_time = retval.time
+		# Generate start params
+		println("\ngenerating initial parameter values...")
+		Λ⁰_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+		@info "Λ⁰_list: " Λ⁰_list
 
-	@info "result: " result
-	@info "run time: " run_time
+		# Solve the system
+		println("solving initial system (polyhedral)...")
+		λ_start = collect(Iterators.flatten(Λ⁰_list))
+		retval = @timed solve(∇L; 
+							  target_parameters=λ_start,
+							  threading=true
+				)	# retval contains the result along with stats
+		result = retval.value
+		run_time = retval.time
 
-	if isnothing(result)
-		throw("Solve returned nothing!")
-	end
-
-
-	# Collect results
-	map["n"] = n
-
-	cbb = utils.get_CBB(∇L)
-	map["CBB"] = cbb
-
-	n_c = utils.get_N_C(result)
-	map["N_C"] = n_c
-
-	n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
-	map["N_DM"] = n_dm
-
-	n_r = utils.get_N_R(result)
-	map["N_R"] = n_r
-
-
-	# write output to file
-	f = open("./output/output.csv", "w")
-	write(f, header)	# write header to output
-
-	row = string(run) * "," #  run number
-	for p in params
-		row = row * string(parsed_args[p]) * ","
-	end
-	for (k, v) in map		# key order is fixed
-		 row = row * string(v) * ","
-	end
-	row = chop(row) * "\n"
-	write(f, row)
-
-	close(f)
-
-	try
-		runs = []
-		for run = 1:runcount
-			println("\nStarting run #: ", run)
-			@info "Starting run #: " run
-
-			# Generate Tikhonov regularization matrices as parameters
-			if reg == "y"
-				println("\ngenerating Λᵢ matrices...")
-				# Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-				Λ_list = utils.generate_parameter_matrices(W_list)
-
-				@info "Λ_list: " Λ_list
-			else
-				println("\nsetting Λᵢ matrices to 0...")
-				Λ_list = utils.generate_zero_matrices(W_list)
-				@info "Λ_list: " Λ_list
-			end
-
-			# Generate gradient polynomials
-			println("\ngenerating gradient polynomials...")
-			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-			println("\ntotal number of polynomials: ", length(p_list))
-			@info "polynomials: " p_list
-
-			# Generate the system of polynomials
-			∇L = System(p_list)	# variables are ordered alphabetically
-			n = nvariables(∇L)
-			println("\ntotal number of variables: ", n)
-			println("\nsolving the polynomial system...")
-
-
-			# Solve the system
-			retval = @timed solve(∇L; threading=true)	# retval contains the result along with stats
-			result = retval.value
-			run_time = retval.time
-
-			@info "result: " result
-			@info "run time: " run_time
-
-			if isnothing(result)
-				throw("Solve returned nothing!")
-			end
-
-
-			# Collect results
-			map["n"] = n
-
-			cbb = utils.get_CBB(∇L)
-			map["CBB"] = cbb
-
-			n_c = utils.get_N_C(result)
-			map["N_C"] = n_c
-
-			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
-			map["N_DM"] = n_dm
-
-			n_r = utils.get_N_R(result)
-			map["N_R"] = n_r
-
-
-			# write row to output
-			row = string(run) * "," #  run number
-			for p in params
-				row = row * string(parsed_args[p]) * ","
-			end
-			for (k, v) in map		# key order is fixed
-				 row = row * string(v) * ","
-			end
-			row = chop(row) * "\n"
-			write(f, row)
+		if isnothing(result)
+			throw("Solve returned nothing!")
 		end
 
-	catch(e)
-		@error "Error while processing! " e
-	finally
+		@info "result: " result
+		@info "run time: " run_time
+
+
+		# Collect results
+		map["n"] = n
+
+		cbb = utils.get_CBB(∇L)
+		map["CBB"] = cbb
+
+		n_c = utils.get_N_C(result)
+		map["N_C"] = n_c
+
+		n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
+		map["N_DM"] = n_dm
+
+		n_r = utils.get_N_R(result)
+		map["N_R"] = n_r
+
+
+		# write output to file
+		f = open("./output/output.csv", "w")
+		write(f, header)	# write header to output
+
+		row = string(run) * "," #  run number
+		for p in params
+			row = row * string(parsed_args[p]) * ","
+		end
+		for (k, v) in map		# key order is fixed
+			 row = row * string(v) * ","
+		end
+		row = chop(row) * "\n"
+		write(f, row)
 		close(f)
-		@info "processing complete."
 	end
+
+################################
+
+
+
+
+
+
+
+	# try
+	# 	if runcount > 1
+	# 		for run = 2:runcount
+
+	# 		# Generate target parameter values
+	# 		println("generating target values for parameters...")
+	# 		Λ¹_list = generate_Tikhonov_matrices(U, W_list)
+	# 		@info "Λ¹_list: " Λ¹_list
+
+	# 		# Solve system  with parameter homotopy
+	# 		println("solving system with parameter homotopy...")
+	# 		retval = @timed solve(∇L, solutions(result);
+	# 							  start_parameters=Λ⁰_list,
+	# 							  target_parameters=Λ⁰_list,
+	# 							  threading=true
+	# 				)	# retval contains the result along with stats
+	# 		result = retval.value
+	# 		run_time = retval.time
+
+	# 		if isnothing(result)
+	# 			throw("Solve returned nothing!")
+	# 		end
+
+	# 		@info "result: " result
+	# 		@info "run time: " run_time
+
+
+	# 	end
+	# catch(e)
+	# 	@error "Error while processing! " e
+	# finally
+	# 	close(f)
+	# 	@info "processing complete."
+	# end
 
 end
 
