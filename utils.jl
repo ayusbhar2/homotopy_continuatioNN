@@ -59,6 +59,27 @@ function generate_Tikhonov_matrices(D, W_list)
 	return Λ_list
 end
 
+
+function generate_parameter_matrix(W, i)
+	m = size(W)[1]; n = size(W)[2]
+	s = string("@var p", i, "[1:", m, ",1:", n, "]")
+	t = eval(Meta.parse(s))
+	return t[1]
+end
+
+
+function generate_parameter_matrices(W_list)
+
+	Λ_list = Any[]
+	for i =1:length(W_list)
+		Λᵢ = generate_parameter_matrix(W_list[i], i)
+		println("Λ", i, " :", size(Λᵢ))
+		push!(Λ_list, Λᵢ)
+	end
+	return Λ_list
+end
+
+
 function generate_zero_matrices(W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)

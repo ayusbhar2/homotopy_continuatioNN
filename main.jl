@@ -130,6 +130,9 @@ function main()
 	# batch level metadata
 	@info "batch level constants: " parsed_args a b X Y
 
+	# genenrate the start system
+	println("\ngenerating the start system...")
+
 
 	# generate weight matrices
 	println("\ngenerating Wᵢ matrices...")
@@ -146,20 +149,86 @@ function main()
 	V_list = utils.generate_V_matrices(W_list)
 	@info "V_list: " V_list
 
+	# Generate Tikhonov regularization matrices as parameters
+	if reg == "y"
+		println("\ngenerating start parameters Λᵢ...")
+		Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+		@info "Λ_list: " Λ_list
+	else
+		println("\nsetting start parameters Λᵢ to 0...")
+		Λ_list = utils.generate_zero_matrices(W_list)
+		@info "Λ_list: " Λ_list
+	end
 
+	# Generate gradient polynomials
+	println("\ngenerating gradient polynomials...")
+	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+	println("\ntotal number of polynomials: ", length(p_list))
+	@info "polynomials: " p_list
+
+	# Generate the system of polynomials
+	∇L = System(p_list)	# variables are ordered alphabetically
+	n = nvariables(∇L)
+	println("\ntotal number of variables: ", n)
+	println("\nsolving the polynomial system...")
+
+	# Solve the system
+	retval = @timed solve(∇L; threading=true)	# retval contains the result along with stats
+	result = retval.value
+	run_time = retval.time
+
+	@info "result: " result
+	@info "run time: " run_time
+
+	if isnothing(result)
+		throw("Solve returned nothing!")
+	end
+
+
+	# Collect results
+	map["n"] = n
+
+	cbb = utils.get_CBB(∇L)
+	map["CBB"] = cbb
+
+	n_c = utils.get_N_C(result)
+	map["N_C"] = n_c
+
+	n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
+	map["N_DM"] = n_dm
+
+	n_r = utils.get_N_R(result)
+	map["N_R"] = n_r
+
+
+	# write output to file
 	f = open("./output/output.csv", "w")
 	write(f, header)	# write header to output
+
+	row = string(run) * "," #  run number
+	for p in params
+		row = row * string(parsed_args[p]) * ","
+	end
+	for (k, v) in map		# key order is fixed
+		 row = row * string(v) * ","
+	end
+	row = chop(row) * "\n"
+	write(f, row)
+
+	close(f)
+
 	try
 		runs = []
 		for run = 1:runcount
 			println("\nStarting run #: ", run)
 			@info "Starting run #: " run
 
-
-			# Generate Tikhonov regularization matrices
+			# Generate Tikhonov regularization matrices as parameters
 			if reg == "y"
 				println("\ngenerating Λᵢ matrices...")
-				Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+				# Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
+				Λ_list = utils.generate_parameter_matrices(W_list)
+
 				@info "Λ_list: " Λ_list
 			else
 				println("\nsetting Λᵢ matrices to 0...")
