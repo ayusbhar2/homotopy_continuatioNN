@@ -14,7 +14,7 @@ using Random
 CONFIG_FILE = "config.json"
 LOG_FILE = "./logs/log.txt"
 OUTPUT_FILE = "./output/output.csv"
-Random.seed!(1234)
+# Random.seed!(1234)
 
 
 io = open(LOG_FILE, "w+")
@@ -70,17 +70,7 @@ function main()
 	runcount = parsed_args["runcount"];
 
 
-	# # one time for generating parametrized polynomials
-	# @var α₁ α₂ α₃ α₄ α₅ α₆ α₇ α₈ α₉ α₁₀ β₁ β₂ β₃ β₄ β₅ β₆ β₇ β₈ β₉ β₁₀
-	# X = [α₁ α₂ α₃ α₄ α₅; α₆ α₇ α₈ α₉ α₁₀]
-	# Y = [β₁ β₂ β₃ β₄ β₅; β₆ β₇ β₈ β₉ β₁₀]
-
-	# Example 2 of paper
-	# X = [7 -8 3 -5 10; -7 10 6 -2 6]
-	# Y = [9 9 -8 1 10; 10 3 -8 9 10]
-
-	# batch level constants
-	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
+	Dist = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
 
@@ -88,9 +78,11 @@ function main()
 	@info "starting process..."
 	@info "batch level constants: " parsed_args a b X Y
 
-	println("\ngenerating the start system...")
 
 
+
+## ~ pre-processing ~ ##
+	
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
 	@info "W_list: " W_list
@@ -103,106 +95,130 @@ function main()
 	V_list = utils.generate_V_matrices(W_list)
 	@info "V_list: " V_list
 
+	println("\ndefining parameters Λᵢ...")
+	Λ_list = utils.generate_parameter_matrices(W_list)
+	@info "Λ_list: " Λ_list
 
-	if reg == "y"								# TODO: make this a top level check
-		try
+	println("\ngenerating gradient polynomials...")
+	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+	println("\ntotal number of polynomials: ", length(p_list))
+	@info "polynomials: " p_list
 
-			println("\ndefining parameters Λᵢ...")
-			Λ_list = utils.generate_parameter_matrices(W_list)
-			@info "Λ_list: " Λ_list
+	println("\ngenerating the parametrized system...")
+	parameters=collect(Iterators.flatten(Λ_list))
+	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
+	n = nvariables(∇L)
+	println("\ntotal number of variables: ", n)
+	println("\ntotal number of parameters: ", length(parameters))
 
+	println("\nassigning initial parameter values...")
+	Λ⁰_list = utils.generate_Tikhonov_matrices(Dist, W_list)
+	# Λ⁰_list = utils.generate_complex_Tikhonov_matrices(W_list)
 
-			println("\ngenerating gradient polynomials...")
-			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-			println("\ntotal number of polynomials: ", length(p_list))
-			@info "polynomials: " p_list
-
-
-			println("\ngenerating the parametrized system...")
-			parameters=collect(Iterators.flatten(Λ_list))
-			∇L = System(p_list; parameters=parameters)	# variables are ordered alphabetically
-			n = nvariables(∇L)
-			println("\ntotal number of variables: ", n)
-
-
-			println("\ngenerating initial parameter values...")
-			Λ⁰_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-			@info "Λ⁰_list: " Λ⁰_list
+	@info "Λ⁰_list: " Λ⁰_list
+	λ_start = collect(Iterators.flatten(Λ⁰_list))
+	@info "start parameters: " λ_start
 
 
-			println("\nsolving the initial system (polyhedral)...")
-			λ_start = collect(Iterators.flatten(Λ⁰_list))
-			retval = @timed solve(∇L; 
-								  target_parameters=λ_start,
-								  threading=true
-					)	# retval contains the result along with stats
-			result = retval.value
-			if isnothing(result)
-				throw("Solve returned nothing!")
+
+
+## ~ Solving initial system ~ ##
+
+	run = 1
+	println("\nwriting sample results to file...")
+	@info "run # " run
+
+	println("\nsolving the initial system (polyhedral)...")
+	retval = @timed solve(∇L; 
+						  target_parameters=λ_start,
+						  threading=true
+			)
+	result0 = retval.value
+	solve_time = retval.time
+
+	@info "result: " result0
+	@info "solutions: " solutions(result0)
+	# @info "solve_time: " solve_time
+
+	println("\ncollecting sample results...")
+	sample_results["n"] = n
+	sample_results["CBB"] = utils.get_CBB(∇L)
+	sample_results["N_C"] = utils.get_N_C(result0)
+	sample_results["N_DM"] = convert(Int64, ceil(utils.get_N_DM(H, n)))
+	sample_results["N_R"] = utils.get_N_R(result0)
+	@info "sample results: " sample_results
+
+	println("\nwriting sample results to file...")
+	row = string(run) * "," #  run number
+	for p in params
+		row = row * string(parsed_args[p]) * ","
+	end
+	for (k, v) in sample_results		# key order is fixed
+		 row = row * string(v) * ","
+	end
+	row = chop(row) * "\n"
+
+	f = open(OUTPUT_FILE, "a")
+	write(f, row)
+
+
+
+
+## ~ Parameter homotopy for subsequent systems ~ ##
+
+	try
+		if runcount > 1
+			λ_target_list = []
+			for i = 2:runcount
+				Λ¹_list = utils.generate_Tikhonov_matrices(Dist, W_list)
+				# Λ¹_list = utils.generate_complex_Tikhonov_matrices(W_list)
+				λ_target = collect(Iterators.flatten(Λ¹_list))
+				push!(λ_target_list, λ_target)
 			end
-			run_time = retval.time
-			@info "result: " result
-			@info "run time: " run_time
+
+			@info "starting parameter homotopy..."
+			@info "target parameter list: " λ_target_list
+			retval = @timed solve(∇L, solutions(result0);
+								  start_parameters=λ_start,
+								  target_parameters=λ_target_list,
+								  threading=true)
+			result_list = retval.value
+			solve_time = retval.time
+			# @info "solve_time: " solve_time
 
 
-			println("\ncollecting sample results...")
-			sample_results["n"] = n
-			sample_results["CBB"] = utils.get_CBB(∇L)
-			sample_results["N_C"] = utils.get_N_C(result)
-			sample_results["N_DM"] = convert(Int64, ceil(utils.get_N_DM(H, n)))
-			sample_results["N_R"] = utils.get_N_R(result)
-			@info "sample results: " sample_results
+			for result in result_list
+				run += 1
+				@info "run # " run
+				@info "result: " result[1]
+				@info "solutions: " solutions(result[1])
+
+				println("\ncollecting sample results...")
+				sample_results["N_C"] = utils.get_N_C(result[1])
+				sample_results["N_DM"] = convert(Int64, ceil(utils.get_N_DM(H, n)))
+				sample_results["N_R"] = utils.get_N_R(result[1])
+				@info "sample results: " sample_results
 
 
-			println("\nwriting sample results to file...")
-			row = string(run) * "," #  run number
-			for p in params
-				row = row * string(parsed_args[p]) * ","
-			end
-			for (k, v) in sample_results		# key order is fixed
-				 row = row * string(v) * ","
-			end
-			row = chop(row) * "\n"
-
-			f = open(OUTPUT_FILE, "a")
-			write(f, row)
-			close(f)
-
-
-			if runcount > 1
-				for run = 2:runcount
-
-					println("generating target parameter values...")
-					Λ¹_list = generate_Tikhonov_matrices(U, W_list)
-					@info "Λ¹_list: " Λ¹_list
-
-					println("solving target system with parameter homotopy...")
-					λ_target = collect(Iterators.flatten(Λ¹_list))
-					retval = @timed solve(∇L, solutions(result);
-										  start_parameters=λ_start,
-										  target_parameters=λ_target,
-										  threading=true
-							)	# retval contains the result along with stats
-					result = retval.value
-					run_time = retval.time
-
-					if isnothing(result)
-						throw("Solve returned nothing!")
-					end
-
-					@info "result: " result
-					@info "run time: " run_time
-					
+				println("\nwriting sample results to file...")
+				row = string(run) * "," #  run number
+				for p in params
+					row = row * string(parsed_args[p]) * ","
 				end
+				for (k, v) in sample_results		# key order is fixed
+					 row = row * string(v) * ","
+				end
+				row = chop(row) * "\n"
+
+				write(f, row)
 			end
 
-		catch(e)
-			@error "Error while processing! " e
-		finally
-			close(f)
-			@info "processing complete."
 		end
-
+	catch(e)
+		println(e)
+		@error e
+	finally
+		close(f)
 	end
 
 end

@@ -44,16 +44,26 @@ end
 
 
 function generate_Tikhonov_matrices(D, W_list)
-
-	# Λ_list = Any[]
-	# @var γ₁ γ₂ γ₃ γ₄
-	# push!(Λ_list, [γ₁ γ₂])
-	# push!(Λ_list, [γ₃; γ₄])
-
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		Λᵢ = generate_Tikhonov_matrix(D, W_list[i])
-		println("Λ", i, " :", size(Λᵢ))
+		# println("Λ", i, " :", size(Λᵢ))
+		push!(Λ_list, Λᵢ)
+	end
+	return Λ_list
+end
+
+
+function generate_complex_Tikhonov_matrix(W)
+	return rand(ComplexF64, size(W))
+end
+
+
+function generate_complex_Tikhonov_matrices(W_list)
+	Λ_list = Any[]
+	for i =1:length(W_list)
+		Λᵢ = generate_complex_Tikhonov_matrix(W_list[i])
+		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
@@ -73,7 +83,7 @@ function generate_parameter_matrices(W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		Λᵢ = generate_parameter_matrix(W_list[i], i)
-		println("Λ", i, " :", size(Λᵢ))
+		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
@@ -84,7 +94,7 @@ function generate_zero_matrices(W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		Λᵢ = zeros(size(W_list[i]))
-		println("Λ", i, " :", size(Λᵢ))
+		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
@@ -98,10 +108,10 @@ function generate_U_matrices(W_list)
 	for i = 1:len
 		if i == len
 			U = I
-			println("U", i, ": I")
+			# println("U", i, ": I")
 		else
 			U = reduce(*, reverse(W_list[i+1:len]))	# W_list contains matrices in reverse order
-			println("U", i, " :", size(U))
+			# println("U", i, " :", size(U))
 		end
 		push!(U_list, U)
 	end
@@ -117,10 +127,10 @@ function generate_V_matrices(W_list)
 	for i = 1:len
 		if i == 1
 			V = I
-			println("V", i, ": I")
+			# println("V", i, ": I")
 		else
 			V = reduce(*, reverse(W_list[1:i-1]))	# W_list contains matrices in reverse order
-			println("V", i, " :", size(V))
+			# println("V", i, " :", size(V))
 		end
 		push!(V_list, V)
 	end
@@ -195,7 +205,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			Wᵢ = _varstring_to_matrix(s, di, di)
 		end
 		W_list[i] = Wᵢ
-		println(string("W", i," :", size(Wᵢ)))
+		# println(string("W", i," :", size(Wᵢ)))
 	end
 
 	return W_list
