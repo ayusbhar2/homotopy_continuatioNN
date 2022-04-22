@@ -3,6 +3,7 @@ module Utils
 using Distributions
 using HomotopyContinuation
 using LinearAlgebra: I
+using OrderedCollections
 
 
 
@@ -209,6 +210,22 @@ function generate_weight_matrices(H, dx, dy, m, di)
 	end
 
 	return W_list
+end
+
+function collect_results(sample_results::OrderedDict, parsed_args::Dict,
+	F::System, R::Result)
+
+	n = nvariables(F)
+	H = parsed_args["H"]
+
+	sample_results["n"] = n
+	sample_results["CBB"] = get_CBB(F)
+	sample_results["N_C"] = get_N_C(R)
+	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
+	sample_results["N_R"] = get_N_R(R)
+
+	return sample_results
+
 end
 
 end # Utils

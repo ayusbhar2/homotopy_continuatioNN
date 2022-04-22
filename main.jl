@@ -76,7 +76,7 @@ function main()
 
 
 	@info "starting process..."
-	@info "batch level constants: " parsed_args a b X Y
+	@info "batch level constants: " parsed_args X Y
 
 
 
@@ -125,14 +125,12 @@ function main()
 ## ~ Solving initial system ~ ##
 
 	run = 1
-	println("\nwriting sample results to file...")
+	println("run # ", run)
 	@info "run # " run
 
 	println("\nsolving the initial system (polyhedral)...")
-	retval = @timed solve(∇L; 
-						  target_parameters=λ_start,
-						  threading=true
-			)
+	retval = @timed solve(∇L; target_parameters=λ_start, threading=true)
+
 	result0 = retval.value
 	solve_time = retval.time
 
@@ -141,11 +139,8 @@ function main()
 	# @info "solve_time: " solve_time
 
 	println("\ncollecting sample results...")
-	sample_results["n"] = n
-	sample_results["CBB"] = utils.get_CBB(∇L)
-	sample_results["N_C"] = utils.get_N_C(result0)
-	sample_results["N_DM"] = convert(Int64, ceil(utils.get_N_DM(H, n)))
-	sample_results["N_R"] = utils.get_N_R(result0)
+	global sample_results = utils.collect_results(sample_results, parsed_args,
+												  ∇L, result0)
 	@info "sample results: " sample_results
 
 	println("\nwriting sample results to file...")
@@ -189,16 +184,15 @@ function main()
 
 			for result in result_list
 				run += 1
+				println("run # ", run)
 				@info "run # " run
 				@info "result: " result[1]
 				@info "solutions: " solutions(result[1])
 
 				println("\ncollecting sample results...")
-				sample_results["N_C"] = utils.get_N_C(result[1])
-				sample_results["N_DM"] = convert(Int64, ceil(utils.get_N_DM(H, n)))
-				sample_results["N_R"] = utils.get_N_R(result[1])
+				global sample_results = utils.collect_results(
+					sample_results, parsed_args, ∇L, result[1])
 				@info "sample results: " sample_results
-
 
 				println("\nwriting sample results to file...")
 				row = string(run) * "," #  run number
@@ -209,10 +203,8 @@ function main()
 					 row = row * string(v) * ","
 				end
 				row = chop(row) * "\n"
-
 				write(f, row)
 			end
-
 		end
 	catch(e)
 		println(e)
