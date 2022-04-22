@@ -44,8 +44,9 @@ function generate_real_Tikhonov_matrix(D, W)
 end
 
 
-function generate_real_Tikhonov_matrices(D, W_list)
+function generate_real_Tikhonov_matrices(a, b, W_list)
 	Λ_list = Any[]
+	D = Uniform(a, b)
 	for i =1:length(W_list)
 		Λᵢ = generate_real_Tikhonov_matrix(D, W_list[i])
 		# println("Λ", i, " :", size(Λᵢ))

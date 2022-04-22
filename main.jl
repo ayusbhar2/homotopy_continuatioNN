@@ -76,6 +76,9 @@ function main()
 	reg_param = parsed_args["reg_param"]
 	x_param = parsed_args["x_param"]
 	y_param = parsed_args["y_param"]
+	reg_dist_name = parsed_args["reg_dist_name"]
+	a = parsed_args["reg_dist_params"][1]
+	b = parsed_args["reg_dist_params"][2]
 	
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
@@ -90,6 +93,9 @@ function main()
 	@info "V_list: " V_list
 
 	parameters = []
+	Λ_list = []
+	X = Matrix{}
+	Y = Matrix{}
 
 	if reg
 		if reg_param
@@ -98,58 +104,47 @@ function main()
 			@info "Λ_list: " Λ_list
 
 			push!(parameters,collect(Iterators.flatten(Λ_list)))
+		else
+			println("\ngenerating real Λᵢ matrices...")
+			Λ_list = utils.generate_real_Tikhonov_matrices(a, b, W_list)
+			@info "Λ_list: " Λ_list
 		end
-
-		# elseif reg_type == "real"
-		# 	println("\ngenerating real Λᵢ matrices...")
-		# 	Λ_list = utils.generate_real_Tikhonov_matrices(Λ_dist, W_list)
-		# 	@info "Λ_list: " Λ_list
-		# else
-		# 	println("\ngenerating complex Λᵢ matrices...")
-		# 	Λ_list = utils.generate_complex_Tikhonov_matrices(W_list)
-		# 	@info "Λ_list: " Λ_list
-		# end
 	end
 
-	if x_param
-		println("\ngenerating parameterized X matrix...")
-		X = utils.generate_parameter_matrix(dx, m, "x")
-		@info "X: " X
-
-		push!(parameters,collect(Iterators.flatten(X)))
-	# else
-	# 	println("\ngenerating real X matrix...")
-	# 	X = randn(dx, m)		# each column is an data point
+	# if x_param
+	# 	println("\ngenerating parameterized X matrix...")
+	# 	X = utils.generate_parameter_matrix(dx, m, "x")
 	# 	@info "X: " X
-	end
 
-	if y_param
-		println("\ngenerating parameterized Y matrix...")
-		Y = utils.generate_parameter_matrix(dx, m, "y")
-		@info "Y: " Y
+	# 	push!(parameters,collect(Iterators.flatten(X)))
 
-		push!(parameters,collect(Iterators.flatten(Y)))
 	# else
-	# 	println("\ngenerating real Y matrix...")
-	# 	Y = randn(dy, m)		# each column is an data point
+	# 	println("\ngenerating real X")
+	# end
+
+	# if y_param
+	# 	println("\ngenerating parameterized Y matrix...")
+	# 	Y = utils.generate_parameter_matrix(dx, m, "y")
 	# 	@info "Y: " Y
-	end
 
-	println("\ngenerating the polynomial system...")
-	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-	@info "polynomials: " p_list
+	# 	push!(parameters,collect(Iterators.flatten(Y)))
+	# end
 
-	parameters = collect(Iterators.flatten(parameters))
-	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
-	n = nvariables(∇L)
+	# println("\ngenerating the polynomial system...")
+	# p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+	# @info "polynomials: " p_list
 
-	println("\ntotal number of polynomials: ", length(p_list))
-	println("\ntotal number of variables: ", n)
-	println("\ntotal number of parameters: ", length(parameters))
+	# parameters = collect(Iterators.flatten(parameters))
+	# ∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
+	# n = nvariables(∇L)
+
+	# println("\ntotal number of polynomials: ", length(p_list))
+	# println("\ntotal number of variables: ", n)
+	# println("\ntotal number of parameters: ", length(parameters))
 
 
 
-	## ~ STAGE 1 ~ ##
+	# ## ~ STAGE 1 ~ ##
 
 	# run = 1
 	# println("\nrun # ", run)

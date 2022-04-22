@@ -10,10 +10,11 @@
 	"reg_dist_name":"uniform",
 	"reg_dist_params":[0,1],
 	"runcount":2,
-	"x_param":true,
+	"start_params_complex":true,
+	"x_param":false,
 	"x_dist_name":"normal",
 	"x_dist_params":[0,1],
-	"y_param":true,
+	"y_param":false,
 	"y_dist_name":"normal",
 	"y_dist_params":[0,1]
 }
