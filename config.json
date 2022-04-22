@@ -6,6 +6,16 @@
 	"dy":2,
 	"a":0,
 	"b":1,
-	"reg":"y",
-	"runcount":2
+	"runcount":2,
+	"regularization": {
+		"status": true,
+		"parametrize": true,
+		"type": "complex"
+	},
+	"X": {
+		"parametrize": true
+	},
+	"Y": {
+		"parametrize": true
+	}
 }

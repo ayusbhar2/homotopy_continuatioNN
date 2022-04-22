@@ -39,15 +39,15 @@ function get_N_DM(H, n)
 end
 
 
-function generate_Tikhonov_matrix(D, W)
+function generate_real_Tikhonov_matrix(D, W)
 	return rand(D, size(W))
 end
 
 
-function generate_Tikhonov_matrices(D, W_list)
+function generate_real_Tikhonov_matrices(D, W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)
-		Λᵢ = generate_Tikhonov_matrix(D, W_list[i])
+		Λᵢ = generate_real_Tikhonov_matrix(D, W_list[i])
 		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
@@ -71,20 +71,21 @@ function generate_complex_Tikhonov_matrices(W_list)
 end
 
 
-function generate_parameter_matrix(W, i)
-	m = size(W)[1]; n = size(W)[2]
-	s = string("@var p", i, "[1:", m, ",1:", n, "]")
+function generate_parameter_matrix(m, n, name)
+	# Generates a parameter matrix with dimensions same as W 
+	s = string("@var ", name, "[1:", m, ",1:", n, "]")
 	t = eval(Meta.parse(s))
+	println(t[1])
 	return t[1]
 end
 
 
-function generate_parameter_matrices(W_list)
+function generate_parameterized_Tikhonov_matrices(W_list)
 
 	Λ_list = Any[]
 	for i =1:length(W_list)
-		Λᵢ = generate_parameter_matrix(W_list[i], i)
-		# println("Λ", i, " :", size(Λᵢ))
+		m = size(W_list[i])[1]; n = size(W_list[i])[2]
+		Λᵢ = generate_parameter_matrix(m, n, "p$i")
 		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
