@@ -1,21 +1,19 @@
 {	
-	"di":2,
 	"H":1,
-	"m":1,
+	"di":2,
 	"dx":2,
 	"dy":2,
-	"a":0,
-	"b":1,
+	"m":1,
+	"reg":true,
+	"reg_param":true,
+	"reg_type":"complex",
+	"reg_dist_name":"uniform",
+	"reg_dist_params":[0,1],
 	"runcount":2,
-	"regularization": {
-		"status": true,
-		"parametrize": true,
-		"type": "complex"
-	},
-	"X": {
-		"parametrize": true
-	},
-	"Y": {
-		"parametrize": true
-	}
+	"x_param":true,
+	"x_dist_name":"normal",
+	"x_dist_params":[0,1],
+	"y_param":true,
+	"y_dist_name":"normal",
+	"y_dist_params":[0,1]
 }
