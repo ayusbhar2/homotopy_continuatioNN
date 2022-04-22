@@ -12,22 +12,23 @@ using Random
 
 
 CONFIG_FILE = "config.json"
+LOG_FILE = "./logs/log.txt"
+OUTPUT_FILE = "./output/output.csv"
+# Random.seed!(1234)
 
-Random.seed!(1234)
 
-log = "./logs/log.txt"
-io = open(log, "w+")
+io = open(LOG_FILE, "w+")
 simple_logger = ConsoleLogger(io, show_limited=false)
 global_logger(simple_logger)
 
 
-map = OrderedDict(
-		"n" => -1,
-		"CBB" => -1,
-		"BKK" => -1,
-		"N_C" => -1,
-		"N_DM" => -1,
-		"N_R" => -1
+sample_results = OrderedDict(
+	"n" => -1,
+	"CBB" => -1,
+	"BKK" => -1,
+	"N_C" => -1,
+	"N_DM" => -1,
+	"N_R" => -1
 	)
 
 params = ("reg", "di", "H", "m", "dx", "dy", "a", "b")
@@ -38,57 +39,16 @@ header = "No.,"  # first column heading
 for p in params
 	global header = header * p * ","
 end
-for k in keys(map)
+for k in keys(sample_results)
 	 global header = header * k * ","
 end
 header = chop(header) * "\n"
 
 
-# function parse_commandline()
-#     s = ArgParseSettings()
-
-#     @add_arg_table s begin
-#         "--H"
-#             help = "number of hidden layers"
-#             arg_type = Int
-#             default = 1
-#         "--dx"
-#             help = "length of input vector"
-#             arg_type = Int
-#             default = 2
-#         "--dy"
-#             help = "length of output vector"
-#             arg_type = Int
-#             default = 2
-#         "--m"
-#             help = "number of examples in training data"
-#             arg_type = Int
-#             default = 5
-#         "--di"
-#             help = "(fixed) number of neurons in each hidden layer"
-#             arg_type = Int
-#             default = 1
-#         "--a"
-#         	help = "value of a in Uniform(a, b)"
-#             arg_type = Int
-#             default = 0
-#         "--b"
-#         	help = "value of b in Uniform(a, b)"
-#             arg_type = Int
-#             default = 1
-#         "--reg"
-#         	help = "regularized? y/n"
-#         	arg_type = String
-#         	default = "y"
-#         "--runcount"
-#             help = "number of trials"
-#             arg_type = Int
-#             default = 1
-
-#     end
-
-#     return parse_args(s)
-# end
+# write header to output
+f = open(OUTPUT_FILE, "a")
+write(f, header)
+close(f)
 
 
 function main()
@@ -110,122 +70,147 @@ function main()
 	runcount = parsed_args["runcount"];
 
 
-	# # one time for generating parametrized polynomials
-	# @var α₁ α₂ α₃ α₄ α₅ α₆ α₇ α₈ α₉ α₁₀ β₁ β₂ β₃ β₄ β₅ β₆ β₇ β₈ β₉ β₁₀
-	# X = [α₁ α₂ α₃ α₄ α₅; α₆ α₇ α₈ α₉ α₁₀]
-	# Y = [β₁ β₂ β₃ β₄ β₅; β₆ β₇ β₈ β₉ β₁₀]
-
-	# Example 2 of paper
-	# X = [7 -8 3 -5 10; -7 10 6 -2 6]
-	# Y = [9 9 -8 1 10; 10 3 -8 9 10]
-
-	# batch level constants
-	Unif = Uniform(a, b)	# used for constructing the Tikhonov matrices
+	Dist = Uniform(a, b)	# used for constructing the Tikhonov matrices
 	X = randn(dx, m)		# each column is an data point
 	Y = randn(dy, m)		# each column is a target point
 
 
 	@info "starting process..."
-
-	# batch level metadata
-	@info "batch level constants: " parsed_args a b X Y
+	@info "batch level constants: " parsed_args X Y
 
 
-	# generate weight matrices
+
+
+## ~ pre-processing ~ ##
+	
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
 	@info "W_list: " W_list
 
-	# Generate U matrices
 	println("\ngenerating Uᵢ matrices...")
 	U_list = utils.generate_U_matrices(W_list)
 	@info "U_list: " U_list
 
-	# Generate V matrices
 	println("\ngenerating Vᵢ matrices...")
 	V_list = utils.generate_V_matrices(W_list)
 	@info "V_list: " V_list
 
+	println("\ndefining parameters Λᵢ...")
+	Λ_list = utils.generate_parameter_matrices(W_list)
+	@info "Λ_list: " Λ_list
 
-	f = open("./output/output.csv", "w")
-	write(f, header)	# write header to output
+	println("\ngenerating gradient polynomials...")
+	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
+	println("\ntotal number of polynomials: ", length(p_list))
+	@info "polynomials: " p_list
+
+	println("\ngenerating the parametrized system...")
+	parameters=collect(Iterators.flatten(Λ_list))
+	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
+	n = nvariables(∇L)
+	println("\ntotal number of variables: ", n)
+	println("\ntotal number of parameters: ", length(parameters))
+
+	println("\nassigning initial parameter values...")
+	Λ⁰_list = utils.generate_Tikhonov_matrices(Dist, W_list)
+	# Λ⁰_list = utils.generate_complex_Tikhonov_matrices(W_list)
+
+	@info "Λ⁰_list: " Λ⁰_list
+	λ_start = collect(Iterators.flatten(Λ⁰_list))
+	@info "start parameters: " λ_start
+
+
+
+
+## ~ Solving initial system ~ ##
+
+	run = 1
+	println("run # ", run)
+	@info "run # " run
+
+	println("\nsolving the initial system (polyhedral)...")
+	retval = @timed solve(∇L; target_parameters=λ_start, threading=true)
+
+	result0 = retval.value
+	solve_time = retval.time
+
+	@info "result: " result0
+	@info "solutions: " solutions(result0)
+	# @info "solve_time: " solve_time
+
+	println("\ncollecting sample results...")
+	global sample_results = utils.collect_results(sample_results, parsed_args,
+												  ∇L, result0)
+	@info "sample results: " sample_results
+
+	println("\nwriting sample results to file...")
+	row = string(run) * "," #  run number
+	for p in params
+		row = row * string(parsed_args[p]) * ","
+	end
+	for (k, v) in sample_results		# key order is fixed
+		 row = row * string(v) * ","
+	end
+	row = chop(row) * "\n"
+
+	f = open(OUTPUT_FILE, "a")
+	write(f, row)
+
+
+
+
+## ~ Parameter homotopy for subsequent systems ~ ##
+
 	try
-		runs = []
-		for run = 1:runcount
-			println("\nStarting run #: ", run)
-			@info "Starting run #: " run
-
-
-			# Generate Tikhonov regularization matrices
-			if reg == "y"
-				println("\ngenerating Λᵢ matrices...")
-				Λ_list = utils.generate_Tikhonov_matrices(Unif, W_list)
-				@info "Λ_list: " Λ_list
-			else
-				println("\nsetting Λᵢ matrices to 0...")
-				Λ_list = utils.generate_zero_matrices(W_list)
-				@info "Λ_list: " Λ_list
+		if runcount > 1
+			λ_target_list = []
+			for i = 2:runcount
+				Λ¹_list = utils.generate_Tikhonov_matrices(Dist, W_list)
+				# Λ¹_list = utils.generate_complex_Tikhonov_matrices(W_list)
+				λ_target = collect(Iterators.flatten(Λ¹_list))
+				push!(λ_target_list, λ_target)
 			end
 
-			# Generate gradient polynomials
-			println("\ngenerating gradient polynomials...")
-			p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)	# TODO: kwargs
-			println("\ntotal number of polynomials: ", length(p_list))
-			@info "polynomials: " p_list
-
-			# Generate the system of polynomials
-			∇L = System(p_list)	# variables are ordered alphabetically
-			n = nvariables(∇L)
-			println("\ntotal number of variables: ", n)
-			println("\nsolving the polynomial system...")
+			@info "starting parameter homotopy..."
+			@info "target parameter list: " λ_target_list
+			retval = @timed solve(∇L, solutions(result0);
+								  start_parameters=λ_start,
+								  target_parameters=λ_target_list,
+								  threading=true)
+			result_list = retval.value
+			solve_time = retval.time
+			# @info "solve_time: " solve_time
 
 
-			# Solve the system
-			retval = @timed solve(∇L; threading=true)	# retval contains the result along with stats
-			result = retval.value
-			run_time = retval.time
+			for result in result_list
+				run += 1
+				println("run # ", run)
+				@info "run # " run
+				@info "result: " result[1]
+				@info "solutions: " solutions(result[1])
 
-			@info "result: " result
-			@info "run time: " run_time
+				println("\ncollecting sample results...")
+				global sample_results = utils.collect_results(
+					sample_results, parsed_args, ∇L, result[1])
+				@info "sample results: " sample_results
 
-			if isnothing(result)
-				throw("Solve returned nothing!")
+				println("\nwriting sample results to file...")
+				row = string(run) * "," #  run number
+				for p in params
+					row = row * string(parsed_args[p]) * ","
+				end
+				for (k, v) in sample_results		# key order is fixed
+					 row = row * string(v) * ","
+				end
+				row = chop(row) * "\n"
+				write(f, row)
 			end
-
-
-			# Collect results
-			map["n"] = n
-
-			cbb = utils.get_CBB(∇L)
-			map["CBB"] = cbb
-
-			n_c = utils.get_N_C(result)
-			map["N_C"] = n_c
-
-			n_dm = convert(Int64, ceil(utils.get_N_DM(H, n)))
-			map["N_DM"] = n_dm
-
-			n_r = utils.get_N_R(result)
-			map["N_R"] = n_r
-
-
-			# write row to output
-			row = string(run) * "," #  run number
-			for p in params
-				row = row * string(parsed_args[p]) * ","
-			end
-			for (k, v) in map		# key order is fixed
-				 row = row * string(v) * ","
-			end
-			row = chop(row) * "\n"
-			write(f, row)
 		end
-
 	catch(e)
-		@error "Error while processing! " e
+		println(e)
+		@error e
 	finally
 		close(f)
-		@info "processing complete."
 	end
 
 end
