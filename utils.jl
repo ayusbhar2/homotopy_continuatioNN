@@ -66,7 +66,7 @@ function generate_parameter_matrix(m, n, name)
 	# Generates a parameter matrix with dimensions same as W 
 	s = string("@var ", name, "[1:", m, ",1:", n, "]")
 	t = eval(Meta.parse(s))
-	println(t[1])
+	# println(t[1])
 	return t[1]
 end
 
@@ -204,8 +204,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 	return W_list
 end
 
-function collect_results(sample_results::OrderedDict, parsed_args::Dict,
-	F::System, R::Result)
+function collect_results(sample_results, parsed_args, F::System, R::Result)
 
 	n = nvariables(F)
 	H = parsed_args["H"]

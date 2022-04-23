@@ -37,6 +37,7 @@ function main()
 	@info "START..."
 
 
+
 	## ~ SETUP ~ ##
 
 	batch_args = JSON.parsefile(CONFIG_FILE)
@@ -161,10 +162,7 @@ function main()
 
 	## ~ STAGE 1 ~ ##
 
-	run = 1
-	println("\nrun # ", run)
-	@info "run # " run
-
+	println("\nSTAGE # 1 ...")
 	println("\nParameter Homotopy: assigning start values...")
 	@info "Parameter Homotopy: assigning start values..."
 
@@ -205,38 +203,40 @@ function main()
 	@info "start_values " start_values
 
 
-	# println("\nParameter Homotopy: solving the initial system (polyhedral)...")
-	# retval = @timed solve(∇L; target_parameters=start_values, threading=true)
+	run = 1
+	@info "run # " run
 
-	# result0 = retval.value
-	# solve_time = retval.time
+	println("\nParameter Homotopy: solving the initial system (polyhedral)...")
+	retval = @timed solve(∇L; target_parameters=start_values, threading=true)
 
-	# 	@info "result: " result0
-	# 	@info "solutions: " solutions(result0)
-	# 	# @info "solve_time: " solve_time
+	result0 = retval.value
+	solve_time = retval.time
 
-	# 	println("\ncollecting sample results...")
-	# 	global sample_results = utils.collect_results(sample_results, parsed_args,
-	# 												  ∇L, result0)
-	# 	@info "sample results: " sample_results
+	@info "solve_time: " solve_time
+	@info "result: " result0
+	@info "solutions: " solutions(result0)
 
-	# 	println("\nwriting sample results to file...")
-	# 	row = string(run) * "," #  run number
-	# 	for p in params
-	# 		row = row * string(parsed_args[p]) * ","
-	# 	end
-	# 	for (k, v) in sample_results		# key order is fixed
-	# 		 row = row * string(v) * ","
-	# 	end
-	# 	row = chop(row) * "\n"
+	println("\ncollecting sample results...")
+	global sample_results = utils.collect_results(sample_results, parsed_args,
+												  ∇L, result0)
+	@info "sample results: " sample_results
 
-	# 	f = open(OUTPUT_FILE, "a")
-	# 	write(f, row)
+	println("\nwriting sample results to file...")
+	row = string(run) * "," #  run number
+	for p in keys(parsed_args)
+		row = row * replace(string(parsed_args[p]), "," => "") * ","
+	end
+	for (k, v) in sample_results		# key order is fixed
+		 row = row * string(v) * ","
+	end
+	row = chop(row) * "\n"
+
+	f = open(OUTPUT_FILE, "a")
+	write(f, row)
 
 
 
-
-	# ## ~ Parameter homotopy for subsequent systems ~ ##
+	# ## ~ STAGE 2 ~ ##
 
 	# 	try
 	# 		if runcount > 1
