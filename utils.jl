@@ -39,16 +39,11 @@ function get_N_DM(H, n)
 end
 
 
-function generate_real_Tikhonov_matrix(D, W)
-	return rand(D, size(W))
-end
-
-
 function generate_real_Tikhonov_matrices(a, b, W_list)
 	Λ_list = Any[]
-	D = Uniform(a, b)
+	U = Uniform(a, b)
 	for i =1:length(W_list)
-		Λᵢ = generate_real_Tikhonov_matrix(D, W_list[i])
+		Λᵢ = rand(U, size(W_list[i]))
 		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
@@ -56,15 +51,10 @@ function generate_real_Tikhonov_matrices(a, b, W_list)
 end
 
 
-function generate_complex_Tikhonov_matrix(W)
-	return rand(ComplexF64, size(W))
-end
-
-
 function generate_complex_Tikhonov_matrices(W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)
-		Λᵢ = generate_complex_Tikhonov_matrix(W_list[i])
+		Λᵢ = rand(ComplexF64, size(W_list[i]))
 		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
