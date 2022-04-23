@@ -8,9 +8,9 @@
 	"reg_parameterized":true,
 	"reg_dist_params":[0,1],
 	"runcount":2,
-	"start_params_complex":true,
+	"start_params_complex":false,
 	"x_parameterized":true,
 	"x_dist_params":[0,1],
-	"y_parameterized":false,
+	"y_parameterized":true,
 	"y_dist_params":[0,1]
 }

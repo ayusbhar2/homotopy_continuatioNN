@@ -78,17 +78,22 @@ function main()
 
 	x_parameterized = parsed_args["x_parameterized"]
 	x_dist_params = parsed_args["x_dist_params"]
+
 	y_parameterized = parsed_args["y_parameterized"]
 	y_dist_params = parsed_args["y_dist_params"]
+
+	start_params_complex = parsed_args["start_params_complex"]
 
 	a = parsed_args["reg_dist_params"][1]
 	b = parsed_args["reg_dist_params"][2]
 
 	μx = x_dist_params[1]
 	σx = x_dist_params[2]
+	Nx = Normal(μx, σx)
 
 	μy = x_dist_params[1]
 	σy = x_dist_params[2]
+	Ny = Normal(μy, σy)
 
 	
 	println("\ngenerating Wᵢ matrices...")
@@ -107,12 +112,13 @@ function main()
 	Λ_list = []
 	X = Matrix{}
 	Y = Matrix{}
+	reg_param_count = 0
 
 	if regularize
 		if reg_parameterized
 			println("\ngenerating parameterized Λᵢ matrices...")
 			Λ_list = utils.generate_parameterized_Tikhonov_matrices(W_list)
-			push!(parameters,collect(Iterators.flatten(Λ_list)))
+			push!(parameters, collect(Iterators.flatten(Λ_list)))
 		else
 			println("\ngenerating real Λᵢ matrices...")
 			Λ_list = utils.generate_real_Tikhonov_matrices(a, b, W_list)
@@ -123,23 +129,20 @@ function main()
 	if x_parameterized
 		println("\ngenerating parameterized X matrix...")
 		X = utils.generate_parameter_matrix(dx, m, "x")
-		push!(parameters,collect(Iterators.flatten(X)))
+		push!(parameters, collect(Iterators.flatten(X)))
 	else
 		println("\ngenerating real X matrix...")
-		N = Normal(μx, σx)
-		X = rand(N, (dx, m))
+		X = rand(Nx, (dx, m))
 	end
 	@info "X: " X
 
 	if y_parameterized
 		println("\ngenerating parameterized Y matrix...")
 		Y = utils.generate_parameter_matrix(dx, m, "y")
-		push!(parameters,collect(Iterators.flatten(Y)))
-
+		push!(parameters, collect(Iterators.flatten(Y)))
 	else
 		println("\ngenerating real Y matrix...")
-		N = Normal(μy, σy)
-		Y = rand(N, (dy, m))
+		Y = rand(Ny, (dy, m))
 	end
 	@info "Y: " Y
 
@@ -156,26 +159,57 @@ function main()
 
 
 
-	# ## ~ STAGE 1 ~ ##
+	## ~ STAGE 1 ~ ##
 
-	# run = 1
-	# println("\nrun # ", run)
-	# @info "run # " run
+	run = 1
+	println("\nrun # ", run)
+	@info "run # " run
 
-	# if reg
-	# 	println("\nassigning initial parameter values to Λᵢ...")
-	# 	Λ⁰_list = utils.generate_Tikhonov_matrices(Dist, W_list)
-	# 	# Λ⁰_list = utils.generate_complex_Tikhonov_matrices(W_list)
+	println("\nParameter Homotopy: assigning start values...")
+	@info "Parameter Homotopy: assigning start values..."
 
-	# 	@info "Λ⁰_list: " Λ⁰_list
-	# 	λ_start = collect(Iterators.flatten(Λ⁰_list))
-	# 	@info "start parameters: " λ_start
+	start_values = []
 
-	# 	println("\nsolving the initial system (polyhedral)...")
-	# 	retval = @timed solve(∇L; target_parameters=λ_start, threading=true)
+	if reg_parameterized
+		if start_params_complex
+			Λ₀_list = utils.generate_complex_Tikhonov_matrices(Λ_list)
+		else
+			Λ₀_list = utils.generate_real_Tikhonov_matrices(a, b, Λ_list)
+		end
+		push!(start_values, collect(Iterators.flatten(Λ₀_list)))
+		# @info "Λ₀_list: " Λ₀_list
+	end
 
-	# 	result0 = retval.value
-	# 	solve_time = retval.time
+	if x_parameterized
+		if start_params_complex
+			X₀ = randn(ComplexF64, size(X))
+		else
+			X₀ = rand(Nx, size(X))
+		end
+		push!(start_values, collect(Iterators.flatten(X₀)))
+		# @info "X₀: " X₀
+	end
+
+	if y_parameterized
+		if start_params_complex
+			Y₀ = randn(ComplexF64, size(Y))
+		else
+			Y₀ = rand(Ny, size(Y))
+		end
+		push!(start_values, collect(Iterators.flatten(Y₀)))
+		# @info "Y₀: " Y₀
+	end
+	start_values = collect(Iterators.flatten(start_values))
+
+	@info "parameters(∇L) " parameters(∇L)
+	@info "start_values " start_values
+
+
+	# println("\nParameter Homotopy: solving the initial system (polyhedral)...")
+	# retval = @timed solve(∇L; target_parameters=start_values, threading=true)
+
+	# result0 = retval.value
+	# solve_time = retval.time
 
 	# 	@info "result: " result0
 	# 	@info "solutions: " solutions(result0)
