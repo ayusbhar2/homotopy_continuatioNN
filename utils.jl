@@ -231,7 +231,6 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 			Λ₀_list = generate_real_Tikhonov_matrices(a, b, Λ_list)
 		end
 		push!(param_values, collect(Iterators.flatten(Λ₀_list)))
-		# @info "Λ₀_list: " Λ₀_list
 	end
 
 	if x_parameterized
@@ -241,7 +240,6 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 			X₀ = rand(Nx, size(X))
 		end
 		push!(param_values, collect(Iterators.flatten(X₀)))
-		# @info "X₀: " X₀
 	end
 
 	if y_parameterized
@@ -251,7 +249,6 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 			Y₀ = rand(Ny, size(Y))
 		end
 		push!(param_values, collect(Iterators.flatten(Y₀)))
-		# @info "Y₀: " Y₀
 	end
 
 	if length(param_values) > 0
