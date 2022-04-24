@@ -1,16 +1,18 @@
 #!/bin/bash
 
-CERT_FILE="/Users/ayushbharadwaj/Desktop/AWS/EC2/ayush_ec2_key_pair.cer"
-IMAGE_ID="ami-0c02fb55956c7d316"
-KEY_NAME="ayush_ec2_key_pair"
-LOGS_LOCATION="/Users/ayushbharadwaj/Desktop/Education/MA_MAthematics/Research/MATH899/Julia/homotopy_continuation/deploy/cloud_logs"
-OUTPUT_LOCATION="/Users/ayushbharadwaj/Desktop/Education/MA_MAthematics/Research/MATH899/Julia/homotopy_continuation/deploy/cloud_output"
-REMOTE_LOCATION="~"
-REPO_LOCATION="/Users/ayushbharadwaj/Desktop/Education/MA_MAthematics/Research/MATH899/Julia/homotopy_continuation"
-REPO_NAME="core"
-SEC_GRP="ayush_SG_us-east-1"
-TAG_KEY="experiment"
-TAR_FILE_NAME="core.tar.gz"
+# Add the following entries to your ~/.bash_profile
+
+# export CERT_FILE="/full/path/to/cert_file.cer"
+# export IMAGE_ID="<amazon-image-id>"
+# export KEY_NAME="<ec2 key-name>"
+# export LOGS_LOCATION="<full-path-to-directory>/homotopy_continuation/deploy/cloud_logs"
+# export OUTPUT_LOCATION="<full-path-to-directory>/homotopy_continuation/deploy/cloud_output"
+# export REMOTE_LOCATION="~"
+# export REPO_LOCATION="<full-path-to-directory>/homotopy_continuation"
+# export REPO_NAME="core"
+# export SEC_GRP="<IAM-security-group-name>"
+# export TAG_KEY="<whatever-you-want>"
+# export TAR_FILE_NAME="core.tar.gz"
 
 
 
