@@ -219,4 +219,47 @@ function collect_results(sample_results, parsed_args, F::System, R::Result)
 
 end
 
+function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_parameterized,
+							   y_parameterized, start_params_complex,
+							   Λ_list, X, Y)
+	param_values = []
+
+	if regularize && reg_parameterized
+		if start_params_complex
+			Λ₀_list = generate_complex_Tikhonov_matrices(Λ_list)
+		else
+			Λ₀_list = generate_real_Tikhonov_matrices(a, b, Λ_list)
+		end
+		push!(param_values, collect(Iterators.flatten(Λ₀_list)))
+		# @info "Λ₀_list: " Λ₀_list
+	end
+
+	if x_parameterized
+		if start_params_complex
+			X₀ = randn(ComplexF64, size(X))
+		else
+			X₀ = rand(Nx, size(X))
+		end
+		push!(param_values, collect(Iterators.flatten(X₀)))
+		# @info "X₀: " X₀
+	end
+
+	if y_parameterized
+		if start_params_complex
+			Y₀ = randn(ComplexF64, size(Y))
+		else
+			Y₀ = rand(Ny, size(Y))
+		end
+		push!(param_values, collect(Iterators.flatten(Y₀)))
+		# @info "Y₀: " Y₀
+	end
+
+	if length(param_values) > 0
+		param_values = collect(Iterators.flatten(param_values))
+	end
+
+	return param_values
+end
+
+
 end # Utils

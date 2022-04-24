@@ -32,11 +32,32 @@ sample_results = OrderedDict(
 	)
 
 
+function generate_row(col1, type, parsed_args, sample_results)
+	row = string(col1) * ","
+
+	for (k, v) in parsed_args
+		if type == "row"
+			row = row * replace(string(v), "," => "") * ","
+		elseif type == "header"
+			row = row * string(k) * ","
+		end
+	end
+	for (k, v) in sample_results
+		if type == "row"
+			row = row * string(v) * ","
+		elseif type == "header"
+			row = row * string(k) * ","
+		end
+	end
+	row = chop(row) * "\n"
+	return row
+end
+
+
+
 function main()
 
 	@info "START..."
-
-
 
 	## ~ SETUP ~ ##
 
@@ -49,17 +70,8 @@ function main()
 	end
 	@info "parsed_args: " parsed_args
 
-	# prepare header for output file
-	header = "No.,"  # first column heading
-	for p in keys(parsed_args)
-		header = header * p * ","
-	end
-	for k in keys(sample_results)
-		 header = header * k * ","
-	end
-	header = chop(header) * "\n"
-
-	# write header to output
+	# write output file header
+	header = generate_row("No.", "header", parsed_args, sample_results)
 	f = open(OUTPUT_FILE, "a")
 	write(f, header)
 	close(f)
@@ -67,6 +79,8 @@ function main()
 
 
 	## ~ PRE-PROCESSING ~ ##
+
+	runcount = parsed_args["runcount"]
 
 	H = parsed_args["H"]
 	di = parsed_args["di"]
@@ -109,6 +123,10 @@ function main()
 	V_list = utils.generate_V_matrices(W_list)
 	@info "V_list: " V_list
 
+
+
+	## ~ PARAMETERS ~ ##
+
 	parameters = []
 	Λ_list = []
 	X = Matrix{}
@@ -124,6 +142,8 @@ function main()
 			println("\ngenerating real Λᵢ matrices...")
 			Λ_list = utils.generate_real_Tikhonov_matrices(a, b, W_list)
 		end
+	else
+		Λ_list = utils.generate_zero_matrices(W_list)
 	end
 	@info "Λ_list: " Λ_list
 
@@ -147,11 +167,21 @@ function main()
 	end
 	@info "Y: " Y
 
+	if length(parameters) == 0
+		@error "No parameters specified for Parameter Homotopy!"
+		error("No parameters specified for Parameter Homotopy!")
+	else
+		parameters = collect(Iterators.flatten(parameters))
+	end
+
+
+
+	## ~ SYSTEM ~ ##
+
 	println("\ngenerating the polynomial system...")
 	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 	@info "polynomials: " p_list
 
-	parameters = collect(Iterators.flatten(parameters))
 	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
 
 	println("\ntotal number of polynomials: ", length(p_list))
@@ -163,51 +193,22 @@ function main()
 	## ~ STAGE 1 ~ ##
 
 	println("\nSTAGE # 1 ...")
-	println("\nParameter Homotopy: assigning start values...")
-	@info "Parameter Homotopy: assigning start values..."
-
-	start_values = []
-
-	if reg_parameterized
-		if start_params_complex
-			Λ₀_list = utils.generate_complex_Tikhonov_matrices(Λ_list)
-		else
-			Λ₀_list = utils.generate_real_Tikhonov_matrices(a, b, Λ_list)
-		end
-		push!(start_values, collect(Iterators.flatten(Λ₀_list)))
-		# @info "Λ₀_list: " Λ₀_list
-	end
-
-	if x_parameterized
-		if start_params_complex
-			X₀ = randn(ComplexF64, size(X))
-		else
-			X₀ = rand(Nx, size(X))
-		end
-		push!(start_values, collect(Iterators.flatten(X₀)))
-		# @info "X₀: " X₀
-	end
-
-	if y_parameterized
-		if start_params_complex
-			Y₀ = randn(ComplexF64, size(Y))
-		else
-			Y₀ = rand(Ny, size(Y))
-		end
-		push!(start_values, collect(Iterators.flatten(Y₀)))
-		# @info "Y₀: " Y₀
-	end
-	start_values = collect(Iterators.flatten(start_values))
-
-	@info "parameters(∇L) " parameters(∇L)
-	@info "start_values " start_values
-
 
 	run = 1
 	@info "run # " run
 
+	println("\nParameter Homotopy: assigning start values...")
+	@info "Parameter Homotopy: assigning start values..."
+
+	start_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
+		reg_parameterized, x_parameterized, y_parameterized,
+		start_params_complex, Λ_list, X, Y)
+
+	@info "parameters(∇L) " parameters(∇L)
+	@info "start_params " start_params
+
 	println("\nParameter Homotopy: solving the initial system (polyhedral)...")
-	retval = @timed solve(∇L; target_parameters=start_values, threading=true)
+	retval = @timed solve(∇L; target_parameters=start_params, threading=true)
 
 	result0 = retval.value
 	solve_time = retval.time
@@ -236,59 +237,52 @@ function main()
 
 
 
-	# ## ~ STAGE 2 ~ ##
-
-	# 	try
-	# 		if runcount > 1
-	# 			λ_target_list = []
-	# 			for i = 2:runcount
-	# 				Λ¹_list = utils.generate_Tikhonov_matrices(Dist, W_list)
-	# 				# Λ¹_list = utils.generate_complex_Tikhonov_matrices(W_list)
-	# 				λ_target = collect(Iterators.flatten(Λ¹_list))
-	# 				push!(λ_target_list, λ_target)
-	# 			end
-
-	# 			@info "starting parameter homotopy..."
-	# 			@info "target parameter list: " λ_target_list
-	# 			retval = @timed solve(∇L, solutions(result0);
-	# 								  start_parameters=λ_start,
-	# 								  target_parameters=λ_target_list,
-	# 								  threading=true)
-	# 			result_list = retval.value
-	# 			solve_time = retval.time
-	# 			# @info "solve_time: " solve_time
+	## ~ STAGE 2 ~ ##
 
 
-	# 			for result in result_list
-	# 				run += 1
-	# 				println("\nrun # ", run)
-	# 				@info "run # " run
-	# 				@info "result: " result[1]
-	# 				@info "solutions: " solutions(result[1])
+	println("\nSTAGE # 2...")
 
-	# 				println("\ncollecting sample results...")
-	# 				global sample_results = utils.collect_results(
-	# 					sample_results, parsed_args, ∇L, result[1])
-	# 				@info "sample results: " sample_results
+	if runcount > 1
+		for run = 2:runcount
+			try
+				@info "run # " run
 
-	# 				println("\nwriting sample results to file...")
-	# 				row = string(run) * "," #  run number
-	# 				for p in params
-	# 					row = row * string(parsed_args[p]) * ","
-	# 				end
-	# 				for (k, v) in sample_results		# key order is fixed
-	# 					 row = row * string(v) * ","
-	# 				end
-	# 				row = chop(row) * "\n"
-	# 				write(f, row)
-	# 			end
-	# 		end
-	# 	catch(e)
-	# 		println(e)
-	# 		@error e
-	# 	finally
-	# 		close(f)
-	# 	end
+				println("\nParameter Homotopy: generating target params...")
+				@info "Parameter Homotopy: generating target params..."
+
+				target_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
+					reg_parameterized, x_parameterized, y_parameterized,
+					start_params_complex, Λ_list, X, Y)
+				@info "target parameter list: " target_params
+
+				retval = @timed solve(∇L, solutions(result0);
+									  start_parameters=start_params,
+									  target_parameters=target_params,
+									  threading=true)
+				result = retval.value
+				solve_time = retval.time
+
+				@info "solve_time: " solve_time
+				@info "result: " result
+				@info "solutions: " solutions(result)
+
+				println("\ncollecting sample results...")
+				global sample_results = utils.collect_results(
+					sample_results, parsed_args, ∇L, result)
+				@info "sample results: " sample_results
+
+				println("\nwriting sample results to file...")
+				row = generate_row(string(run), "row", parsed_args, sample_results)
+				write(f, row)
+
+			catch(e)
+				println(e)
+				@error e
+			finally
+				close(f)
+			end
+		end
+	end
 
 end
 
