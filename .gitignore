@@ -1,5 +1,8 @@
 *.txt
-/sandbox
-/output
-/logs
+output/
+logs/
+/.DS_Store
+*.gz
+cloud_output/
+cloud_logs/
 
