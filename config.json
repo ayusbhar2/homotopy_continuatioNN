@@ -1,16 +1,16 @@
 {	
+	"di":2,
 	"H":1,
-	"di":1,
+	"m":1,
 	"dx":2,
 	"dy":2,
-	"m":1,
 	"reg":true,
 	"reg_parameterized":true,
+	"x_parameterized":false,
+	"y_parameterized":false,
+	"start_params_complex":false,
 	"reg_dist_params":[0,1],
-	"runcount":2,
-	"start_params_complex":true,
-	"x_parameterized":true,
 	"x_dist_params":[0,1],
-	"y_parameterized":true,
-	"y_dist_params":[0,1]
+	"y_dist_params":[0,1],
+	"runcount":2
 }

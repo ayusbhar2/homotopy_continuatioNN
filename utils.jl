@@ -220,12 +220,12 @@ function collect_results(sample_results, parsed_args, F::System, R::Result)
 end
 
 function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_parameterized,
-							   y_parameterized, start_params_complex,
-							   Λ_list, X, Y)
+							   y_parameterized,
+							   Λ_list, X, Y; complex=false)
 	param_values = []
 
 	if regularize && reg_parameterized
-		if start_params_complex
+		if complex
 			Λ₀_list = generate_complex_Tikhonov_matrices(Λ_list)
 		else
 			Λ₀_list = generate_real_Tikhonov_matrices(a, b, Λ_list)
@@ -235,7 +235,7 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 	end
 
 	if x_parameterized
-		if start_params_complex
+		if complex
 			X₀ = randn(ComplexF64, size(X))
 		else
 			X₀ = rand(Nx, size(X))
@@ -245,7 +245,7 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 	end
 
 	if y_parameterized
-		if start_params_complex
+		if complex
 			Y₀ = randn(ComplexF64, size(Y))
 		else
 			Y₀ = rand(Ny, size(Y))

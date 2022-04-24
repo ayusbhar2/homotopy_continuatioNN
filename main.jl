@@ -202,7 +202,7 @@ function main()
 
 	start_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
 		reg_parameterized, x_parameterized, y_parameterized,
-		start_params_complex, Λ_list, X, Y)
+		Λ_list, X, Y; complex=start_params_complex) #  start params should be complex
 
 	@info "parameters(∇L) " parameters(∇L)
 	@info "start_params " start_params
@@ -241,47 +241,46 @@ function main()
 
 
 	println("\nSTAGE # 2...")
+	try
+		if runcount > 1
+			for run = 2:runcount
+		
+					@info "run # " run
 
-	if runcount > 1
-		for run = 2:runcount
-			try
-				@info "run # " run
+					println("\nParameter Homotopy: generating target params...")
+					@info "Parameter Homotopy: generating target params..."
 
-				println("\nParameter Homotopy: generating target params...")
-				@info "Parameter Homotopy: generating target params..."
+					target_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
+						reg_parameterized, x_parameterized, y_parameterized,
+						Λ_list, X, Y; complex=false) # subsequent params should be real
+					@info "target parameter list: " target_params
 
-				target_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
-					reg_parameterized, x_parameterized, y_parameterized,
-					start_params_complex, Λ_list, X, Y)
-				@info "target parameter list: " target_params
+					retval = @timed solve(∇L, solutions(result0);
+										  start_parameters=start_params,
+										  target_parameters=target_params,
+										  threading=true)
+					result = retval.value
+					solve_time = retval.time
 
-				retval = @timed solve(∇L, solutions(result0);
-									  start_parameters=start_params,
-									  target_parameters=target_params,
-									  threading=true)
-				result = retval.value
-				solve_time = retval.time
+					@info "solve_time: " solve_time
+					@info "result: " result
+					@info "solutions: " solutions(result)
 
-				@info "solve_time: " solve_time
-				@info "result: " result
-				@info "solutions: " solutions(result)
+					println("\ncollecting sample results...")
+					global sample_results = utils.collect_results(
+						sample_results, parsed_args, ∇L, result)
+					@info "sample results: " sample_results
 
-				println("\ncollecting sample results...")
-				global sample_results = utils.collect_results(
-					sample_results, parsed_args, ∇L, result)
-				@info "sample results: " sample_results
-
-				println("\nwriting sample results to file...")
-				row = generate_row(string(run), "row", parsed_args, sample_results)
-				write(f, row)
-
-			catch(e)
-				println(e)
-				@error e
-			finally
-				close(f)
+					println("\nwriting sample results to file...")
+					row = generate_row(string(run), "row", parsed_args, sample_results)
+					write(f, row)
 			end
 		end
+	catch(e)
+		println(e)
+		@error e
+	finally
+		close(f)
 	end
 
 end
