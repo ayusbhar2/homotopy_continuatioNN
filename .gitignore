@@ -1,7 +1,7 @@
 *.txt
 output/
 logs/
-/.DS_Store
+.DS_Store
 *.gz
 cloud_output/
 cloud_logs/
