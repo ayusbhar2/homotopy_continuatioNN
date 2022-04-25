@@ -258,5 +258,28 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 	return param_values
 end
 
+function generate_conv_layer(di, dx; stride=0, width=1)
+	if (di - 1) * stride + width > dx
+		error("Mismatch! Combination of di, dx, stride and width leads to an invalide convolution.")
+	else
+		W = []
+		s = "@var "
+		for i = 1:width
+			s = string(s, "t", i, " ")
+		end
+		t = eval(Meta.parse(s))
+		c = collect(t)
+		kernel = join(c, " ") * " "
+		exp = "["
+		for j = 0:(di - 1)
+			l = repeat("0 ", j*stride)
+			r = repeat("0 ", dx - (j*stride + width))
+			exp = exp * string(l, kernel, r, ";")
+		end
+		exp = chop(exp) * "]"
+		W = eval(Meta.parse(exp))
+	end
+	return W
+end
 
 end # Utils
