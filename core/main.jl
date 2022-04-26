@@ -87,6 +87,9 @@ function main()
 	dx = parsed_args["dx"]
 	dy = parsed_args["dy"]
 	m = parsed_args["m"]
+	first_layer_conv = parsed_args["first_layer_conv"]
+	stride = parsed_args["stride"]
+	width = parsed_args["width"]
 
 	regularize = parsed_args["reg"]
 	reg_parameterized = parsed_args["reg_parameterized"]
@@ -112,7 +115,8 @@ function main()
 
 	
 	println("\ngenerating Wᵢ matrices...")
-	W_list = utils.generate_weight_matrices(H, dx, dy, m, di)
+	W_list = utils.generate_weight_matrices(H, dx, dy, m, di;
+		first_layer_conv=first_layer_conv, stride=stride, width=width)
 	@info "W_list: " W_list
 
 	println("\ngenerating Uᵢ matrices...")
@@ -159,7 +163,7 @@ function main()
 
 	if y_parameterized
 		println("\ngenerating parameterized Y matrix...")
-		Y = utils.generate_parameter_matrix(dx, m, "y")
+		Y = utils.generate_parameter_matrix(dy, m, "y")
 		push!(parameters, collect(Iterators.flatten(Y)))
 	else
 		println("\ngenerating real Y matrix...")
