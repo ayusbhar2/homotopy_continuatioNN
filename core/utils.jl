@@ -77,6 +77,7 @@ function generate_parameterized_Tikhonov_matrices(W_list)
 	for i =1:length(W_list)
 		m = size(W_list[i])[1]; n = size(W_list[i])[2]
 		Λᵢ = generate_parameter_matrix(m, n, "p$i")
+		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
 	return Λ_list
@@ -151,6 +152,30 @@ function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 	return p_list
 end
 
+function generate_conv_layer(di, dx; stride=1, width=1)
+	if (di - 1) * stride + width > dx
+		error("Mismatch! Combination of di, dx, stride and width leads to an invalide convolution.")
+	else
+		W = []
+		s = "@var "
+		for i = 1:width
+			s = string(s, "t", i, " ")
+		end
+		t = eval(Meta.parse(s))
+		c = collect(t)
+		kernel = join(c, " ") * " "
+		exp = "["
+		for j = 0:(di - 1)
+			l = repeat("0 ", j*stride)
+			r = repeat("0 ", dx - (j*stride + width))
+			exp = exp * string(l, kernel, r, ";")
+		end
+		exp = chop(exp) * "]"
+		W = eval(Meta.parse(exp))
+	end
+	return W
+end
+
 
 """ Generate a list of weight matrices (one per layer) given the architectural
 parameters of the neural network.
@@ -167,24 +192,29 @@ Output:
 
 W_list: (Vector{Matrix{Variable}}): List of weight matrices for the network
 """
-function generate_weight_matrices(H, dx, dy, m, di)
+function generate_weight_matrices(H, dx, dy, m, di; 
+	first_layer_conv=false, stride=1, width=1)
 
 	W_list = Vector{Matrix}(undef, H+1)
 	for i = 1:(H+1)
 		s = "@var "
 		if i == 1
-			# define di * dx new variables and fill them into Wᵢ
-			for j = 1:di
-				for k = 1:dx
-					s = string(s,"w",i,j,k, " ")
+			if first_layer_conv
+				Wᵢ = generate_conv_layer(di, dx; stride=stride, width=width)
+			else
+				# define di * dx new variables and fill them into Wᵢ
+				for j = 1:di
+					for k = 1:dx
+						s = string(s,"w",i,k,j, " ")
+					end
 				end
+				Wᵢ = _varstring_to_matrix(s, di, dx)
 			end
-			Wᵢ = _varstring_to_matrix(s, di, dx)
 		elseif i == H+1
 			# define dy * di new variables and fill them into Wᵢ
 			for j = 1:dy
 				for k = 1:di
-					s = string(s,"w",i,j,k, " ")
+					s = string(s,"w",i,k,j, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, dy, di)
@@ -192,7 +222,7 @@ function generate_weight_matrices(H, dx, dy, m, di)
 			# define di * di new variables and fill them into Wᵢ
 			for j = 1:di
 				for k = 1:di
-					s = string(s,"w",i,j,k, " ")
+					s = string(s,"w",i,k,j, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, di, di)
