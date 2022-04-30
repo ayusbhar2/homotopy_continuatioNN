@@ -244,9 +244,9 @@ function main()
 	## ~ STAGE 2 ~ ##
 
 
-	println("\nSTAGE # 2...")
 	try
 		if runcount > 1
+			println("\nSTAGE # 2...")
 			for run = 2:runcount
 		
 					@info "run # " run

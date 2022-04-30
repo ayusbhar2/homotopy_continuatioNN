@@ -2,18 +2,18 @@
 	"di":2,
 	"H":1,
 	"m":1,
-	"dx":3,
+	"dx":2,
 	"dy":2,
 	"first_layer_conv": true,
 	"stride":1,
-	"width":2,
+	"width":1,
 	"reg":true,
 	"reg_parameterized":true,
 	"x_parameterized":true,
 	"y_parameterized":true,
-	"start_params_complex":true,
+	"start_params_complex":false,
 	"reg_dist_params":[0,1],
 	"x_dist_params":[0,1],
 	"y_dist_params":[0,1],
-	"runcount":10
+	"runcount":2
 }

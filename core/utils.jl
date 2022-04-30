@@ -39,6 +39,39 @@ function get_N_DM(H, n)
 end
 
 
+function get_loss_value()
+
+end
+
+function get_norm_squared(v)
+	if length(size(v)) > 1  # matrix
+		sum = 0
+		for i=1:size(v)[1]
+			for j = 1:size(v)[2]
+				sum += v[i,j]^2
+			end
+		end
+	else  					# vector
+		sum = 0
+		for i = 1:length(v)
+			sum += (v[i])^2
+		end
+	end
+	return sum
+end
+
+
+# function get_Frobenius_norm_squared(M)
+# 	sum = 0
+# 	for i=1:size(M)[1]
+# 		for j = 1:size(M)[2]
+# 			sum += M[i,j]^2
+# 		end
+# 	end
+# 	return sum
+# end
+
+
 function generate_real_Tikhonov_matrices(a, b, W_list)
 	Λ_list = Any[]
 	U = Uniform(a, b)
@@ -63,7 +96,6 @@ end
 
 
 function generate_parameter_matrix(m, n, name)
-	# Generates a parameter matrix with dimensions same as W 
 	s = string("@var ", name, "[1:", m, ",1:", n, "]")
 	t = eval(Meta.parse(s))
 	# println(t[1])
@@ -139,10 +171,10 @@ function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
 	for i = 1:length(W_list)
 		∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
-		# println("∂L_Wᵢ :", size(∂L_Wᵢ))
+		# println("∂L_Wᵢ :", ∂L_Wᵢ)
 
 		v = vec(∂L_Wᵢ)
-		# println("v: ", v)
+		println("i = ", i, "v: ", v)
 		for p in v
 			# println("p: ", p)
 			push!(p_list, p)
@@ -173,6 +205,7 @@ function generate_conv_layer(di, dx; stride=1, width=1)
 		exp = chop(exp) * "]"
 		W = eval(Meta.parse(exp))
 	end
+	println("convolution layer Matrix: ", W)
 	return W
 end
 
@@ -288,5 +321,27 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 	return param_values
 end
 
+
+function get_loss(W_list, Λ_list, X, Y)
+	W = reduce(*, reverse(W_list))
+	sum1 = 0
+	for i = 1:size(X)[2]
+		x = X[:, i]
+		y = Y[:, i]
+		v = W * x - y
+		sum1 = sum1 + get_norm_squared(v)
+	end
+
+	sum2 = 0
+	for i = 1:length(W_list)
+		M = W_list[i] .* Λ_list[i]
+		sum2 += get_norm_squared(M)
+	end
+
+	sum = sum1 + sum2
+
+	return (1/2) * sum
+
+end
 
 end # Utils
