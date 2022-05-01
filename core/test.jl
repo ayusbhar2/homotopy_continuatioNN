@@ -34,6 +34,7 @@ assert(W_list_actual[2][1,1]==w211)
 assert(W_list_actual[2][2,1]==w212)
 
 
+
 # test
 println("> utils.generate_weight_matrices_yes_conv")
 W_list_actual = utils.generate_weight_matrices(1, 2, 2, 1, 2; 
@@ -53,9 +54,103 @@ assert(W_list_actual[2][2,2]==w222)
 
 
 
-# # test
-# println("> utils.generate_weight_matrices_no_conv_di_2")
-# W_list_actual = utils.generate_weight_matrices(1, 2, 2, 1, 2)
-# println(W_list_actual)
+# test
+println("> utils.get_loss_with_variables")
+
+@var w111 w112 w211 w221 l111 l112 l211 l221 x11 x12 x21 x22 y11 y12 y21 y22
+
+W1 = [w111 w112]
+W2 = [w211; w221]
+W_list = [W1, W2]
+
+Λ1 = [l111 l112]
+Λ2 = [l211; l221]
+Λ_list = [Λ1, Λ2]
+
+X = [x11 x12; x21 x22]
+Y = [y11 y12; y21 y22]
+
+s = eval(Meta.parse("""
+	0.5*(l111^2*w111^2 + l112^2*w112^2 + l211^2*w211^2 + l221^2*w221^2 +
+	(-y11 + x11*w111*w211 + x21*w112*w211)^2 + 
+	(-y12 + x12*w111*w211 + x22*w112*w211)^2 +
+	(-y21 + x11*w111*w221 + x21*w112*w221)^2 + 
+	(-y22 + x12*w111*w221 + x22*w112*w221)^2)
+	"""))
+
+assert(utils.get_loss(W_list, Λ_list, X, Y) == s)
+
+
+
+# test
+println("> utils.get_loss_with_constants")
+
+W1 = [1 2] 
+W2 = [3; 4]
+W_list = [W1, W2]
+
+Λ1 = [5 6]
+Λ2 = [7; 8]
+Λ_list = [Λ1, Λ2]
+
+X = [-1 2; 3 4]
+Y = [5 6; 7 8]
+assert(utils.get_loss(W_list, Λ_list, X, Y)==1751.5)
+
+
+
+# test
+println("> utils.generate_gradient_polynomials_with_convolution_1")
+@var w111 w112 w211 w221
+
+W1 = [w111 w112]
+W2 = [w211; w221]
+W_list = [W1, W2]
+
+Λ1 = [5 6]
+Λ2 = [7; 8]
+Λ_list = [Λ1, Λ2]
+
+X = [-1 2; 3 4]
+Y = [5 6; 7 8]
+
+p_list = utils.generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
+assert(p_list[1]==eval(Meta.parse("""0.5*(50*w111 + 4*(-8 + 2*w111*w221 + 4*w112*w221)*w221
+								- 2*(-7 - w111*w221 + 3*w112*w221)*w221
+								+ 4*(-6 + 2*w111*w211 + 4*w112*w211)*w211
+								- 2*(-5 - w111*w211 + 3*w112*w211)*w211)""")))
+
+
+# test
+println("> utils.generate_gradient_polynomials_with_convolution_2")
+
+@var t1 w11 w12 w21 w22
+
+W1 = [t1 0; 0 t1]
+W2 = [w11 w12 ; w21 w22]
+W_list = [W1, W2]
+
+Λ1 = [1 2; 3 4]
+Λ2 = [5 6; 7 8]
+Λ_list = [Λ1, Λ2]
+
+X = [-1 2; 3 4]
+Y = [5 6; 7 8]
+
+p_list = utils.generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
+assert(p_list[1]==eval(Meta.parse("""
+	0.5*(34*t1 + 
+	2*(-8 + 2*t1*w21 + 4*t1*w22)*(2*w21 + 4*w22) + 
+	2*(-7 - t1*w21 + 3*t1*w22)*(-w21 + 3*w22) + 
+	2*(-6 + 2*t1*w11 + 4*t1*w12)*(2*w11 + 4*w12) + 
+	2*(-5 - t1*w11 + 3*t1*w12)*(-w11 + 3*w12))""")))
+
+
+
+
+
+
+
+
 
 
