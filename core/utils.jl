@@ -193,8 +193,9 @@ function generate_conv_layer(di, dx; stride=1, width=1)
 		for i = 1:width
 			s = string(s, "t", i, " ")
 		end
-		t = eval(Meta.parse(s))
+		t = eval(Meta.parse(s))		# declare variables
 		c = collect(t)
+
 		kernel = join(c, " ") * " "
 		exp = "["
 		for j = 0:(di - 1)
@@ -204,8 +205,9 @@ function generate_conv_layer(di, dx; stride=1, width=1)
 		end
 		exp = chop(exp) * "]"
 		W = eval(Meta.parse(exp))
+
 	end
-	println("convolution layer Matrix: ", W)
+	# println("convolution layer Matrix: ", W)
 	return W
 end
 
@@ -323,6 +325,7 @@ end
 
 
 function get_loss(W_list, Λ_list, X, Y)
+	# generates loss function and/or computes loss value.
 	W = reduce(*, reverse(W_list))
 	sum1 = 0
 	for i = 1:size(X)[2]
@@ -342,6 +345,24 @@ function get_loss(W_list, Λ_list, X, Y)
 
 	return (1/2) * sum
 
+end
+
+
+function generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
+	L = get_loss(W_list, Λ_list, X, Y)
+	l = []
+	vars = collect(Iterators.flatten(W_list))
+	for v in unique(vars)
+		if v == 0
+			continue
+		else
+			v = Variable(v)		# For convo-layer, the variables can be of type Expression
+			dL_dv = differentiate(L, v)
+			# println("\n∂L/∂",v, " = ", dL_dv)
+			push!(l, dL_dv)
+		end
+	end
+	return l
 end
 
 end # Utils

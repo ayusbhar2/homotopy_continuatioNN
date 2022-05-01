@@ -183,7 +183,12 @@ function main()
 	## ~ SYSTEM ~ ##
 
 	println("\ngenerating the polynomial system...")
-	p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
+
+	if first_layer_conv
+		p_list = utils.generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
+	else
+		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
+	end
 	@info "polynomials: " p_list
 
 	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically

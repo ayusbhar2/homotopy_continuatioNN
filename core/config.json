@@ -11,9 +11,9 @@
 	"reg_parameterized":true,
 	"x_parameterized":true,
 	"y_parameterized":true,
-	"start_params_complex":false,
+	"start_params_complex":true,
 	"reg_dist_params":[0,1],
 	"x_dist_params":[0,1],
 	"y_dist_params":[0,1],
-	"runcount":2
+	"runcount":1
 }
