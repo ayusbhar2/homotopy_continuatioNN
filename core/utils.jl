@@ -6,6 +6,10 @@ using LinearAlgebra: I
 using OrderedCollections
 
 
+function _matrix_to_varsting(W)
+
+end
+
 
 function _varstring_to_matrix(s, m, n)
 	t = eval(Meta.parse(s))
@@ -39,7 +43,7 @@ function get_N_DM(H, n)
 end
 
 
-function get_loss_value()
+function generate_loss_func_value()
 
 end
 
@@ -108,7 +112,7 @@ function generate_parameterized_Tikhonov_matrices(W_list)
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		m = size(W_list[i])[1]; n = size(W_list[i])[2]
-		Λᵢ = generate_parameter_matrix(m, n, "p$i")
+		Λᵢ = generate_parameter_matrix(m, n, "λ$i")
 		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
@@ -174,7 +178,6 @@ function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 		# println("∂L_Wᵢ :", ∂L_Wᵢ)
 
 		v = vec(∂L_Wᵢ)
-		println("i = ", i, "v: ", v)
 		for p in v
 			# println("p: ", p)
 			push!(p_list, p)
@@ -324,8 +327,7 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 end
 
 
-function get_loss(W_list, Λ_list, X, Y)
-	# generates loss function and/or computes loss value.
+function generate_loss_func(W_list, Λ_list, X, Y)
 	W = reduce(*, reverse(W_list))
 	sum1 = 0
 	for i = 1:size(X)[2]
@@ -348,21 +350,33 @@ function get_loss(W_list, Λ_list, X, Y)
 end
 
 
-function generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
-	L = get_loss(W_list, Λ_list, X, Y)
+function generate_gradient_polynomials_with_convolution(L, vars)
 	l = []
-	vars = collect(Iterators.flatten(W_list))
-	for v in unique(vars)
-		if v == 0
-			continue
-		else
-			v = Variable(v)		# For convo-layer, the variables can be of type Expression
-			dL_dv = differentiate(L, v)
-			# println("\n∂L/∂",v, " = ", dL_dv)
-			push!(l, dL_dv)
-		end
+	for v in vars
+		dL_dv = differentiate(L, v)
+		# println("\n∂L/∂",v, " = ", dL_dv)
+		push!(l, dL_dv)
 	end
 	return l
 end
+
+
+function make_variable(exp)
+	return Variable(exp)
+end
+
+function extract_and_sort_variables(W_list)
+	vars = unique(collect(Iterators.flatten(W_list)))
+	vars = deleteat!(vars, vars .== 0)
+	vars = map(make_variable, vars)
+	vars = sort(vars)
+	# println(typeof(vars))
+	return vars
+end
+
+
+
+
+
 
 end # Utils

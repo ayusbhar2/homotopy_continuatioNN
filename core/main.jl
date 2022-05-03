@@ -28,7 +28,8 @@ sample_results = OrderedDict(
 	"BKK" => -1,
 	"N_C" => -1,
 	"N_DM" => -1,
-	"N_R" => -1
+	"N_R" => -1,
+	"L" => -1
 	)
 
 
@@ -119,14 +120,6 @@ function main()
 		first_layer_conv=first_layer_conv, stride=stride, width=width)
 	@info "W_list: " W_list
 
-	println("\ngenerating Uᵢ matrices...")
-	U_list = utils.generate_U_matrices(W_list)
-	@info "U_list: " U_list
-
-	println("\ngenerating Vᵢ matrices...")
-	V_list = utils.generate_V_matrices(W_list)
-	@info "V_list: " V_list
-
 
 
 	## ~ PARAMETERS ~ ##
@@ -180,22 +173,35 @@ function main()
 
 
 
+
 	## ~ SYSTEM ~ ##
 
 	println("\ngenerating the polynomial system...")
 
+	L = utils.generate_loss_func(W_list, Λ_list, X, Y)
+	variables = utils.extract_and_sort_variables(W_list)
+
 	if first_layer_conv
-		p_list = utils.generate_gradient_polynomials_with_convolution(W_list, Λ_list, X, Y)
+		p_list = utils.generate_gradient_polynomials_with_convolution(L, variables)
 	else
+		println("\ngenerating Uᵢ matrices...")
+		U_list = utils.generate_U_matrices(W_list)
+		@info "U_list: " U_list
+
+		println("\ngenerating Vᵢ matrices...")
+		V_list = utils.generate_V_matrices(W_list)
+		@info "V_list: " V_list
+
 		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 	end
 	@info "polynomials: " p_list
 
-	∇L = System(p_list; parameters=parameters)	# variables are ordered lexicographically
+	∇L = System(p_list; parameters=parameters, variables=variables)	# variables are sorted lexicographically
 
 	println("\ntotal number of polynomials: ", length(p_list))
-	println("\ntotal number of variables: ", nvariables(∇L))
+	println("\ntotal number of variables: ", length(variables))
 	println("\ntotal number of parameters: ", length(parameters))
+
 
 
 
