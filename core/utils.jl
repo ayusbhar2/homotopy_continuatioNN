@@ -43,7 +43,18 @@ function get_N_DM(H, n)
 end
 
 
-function generate_loss_func_value()
+function get_loss(L, ∇L, solution, param_values)
+	# compute loss for a single solution
+
+	var_names = variables(∇L)
+	param_names = parameters(∇L)
+	names = cat(var_names, param_names; dims=1)
+	# println("names: ", names)
+	values = cat(solution, param_values; dims=1)
+	# println("values: ", values)
+
+	l = evaluate(L, names => values)
+	return l
 
 end
 
@@ -64,16 +75,6 @@ function get_norm_squared(v)
 	return sum
 end
 
-
-# function get_Frobenius_norm_squared(M)
-# 	sum = 0
-# 	for i=1:size(M)[1]
-# 		for j = 1:size(M)[2]
-# 			sum += M[i,j]^2
-# 		end
-# 	end
-# 	return sum
-# end
 
 
 function generate_real_Tikhonov_matrices(a, b, W_list)
@@ -272,7 +273,7 @@ function generate_weight_matrices(H, dx, dy, m, di;
 	return W_list
 end
 
-function collect_results(sample_results, parsed_args, F::System, R::Result)
+function collect_results(L, F::System, R::Result, param_values, parsed_args, sample_results)
 
 	n = nvariables(F)
 	H = parsed_args["H"]
@@ -282,6 +283,17 @@ function collect_results(sample_results, parsed_args, F::System, R::Result)
 	sample_results["N_C"] = get_N_C(R)
 	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
 	sample_results["N_R"] = get_N_R(R)
+
+	# solution_list = solutions(F)
+	# loss_list = []
+	# for sol in solution_list
+	# 	loss = get_loss(L, F, sol, param_values)
+	# 	push!(loss_list, loss)
+	# end
+
+
+	# sample_results["L_min"] = 
+	# sample_results["L_max"] = 
 
 	return sample_results
 
@@ -359,6 +371,7 @@ function generate_gradient_polynomials_with_convolution(L, vars)
 	end
 	return l
 end
+
 
 
 function make_variable(exp)

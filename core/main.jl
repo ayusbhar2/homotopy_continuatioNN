@@ -20,6 +20,7 @@ OUTPUT_FILE = "./output/output.csv"
 io = open(LOG_FILE, "w+")
 simple_logger = ConsoleLogger(io, show_limited=false)
 global_logger(simple_logger)
+disable_logging(Logging.Debug)
 
 
 sample_results = OrderedDict(
@@ -29,7 +30,12 @@ sample_results = OrderedDict(
 	"N_C" => -1,
 	"N_DM" => -1,
 	"N_R" => -1,
-	"L" => -1
+	"L_min" => -1,
+	"W_min" => -1,
+	"L_max" => -1,
+	"W_max" => -1,
+	"var_names" => "",
+	"param_names" => ""
 	)
 
 
@@ -118,7 +124,7 @@ function main()
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di;
 		first_layer_conv=first_layer_conv, stride=stride, width=width)
-	@info "W_list: " W_list
+	@debug "W_list: " W_list
 
 
 
@@ -142,7 +148,7 @@ function main()
 	else
 		Λ_list = utils.generate_zero_matrices(W_list)
 	end
-	@info "Λ_list: " Λ_list
+	@debug "Λ_list: " Λ_list
 
 	if x_parameterized
 		println("\ngenerating parameterized X matrix...")
@@ -152,7 +158,7 @@ function main()
 		println("\ngenerating real X matrix...")
 		X = rand(Nx, (dx, m))
 	end
-	@info "X: " X
+	@debug "X: " X
 
 	if y_parameterized
 		println("\ngenerating parameterized Y matrix...")
@@ -162,7 +168,7 @@ function main()
 		println("\ngenerating real Y matrix...")
 		Y = rand(Ny, (dy, m))
 	end
-	@info "Y: " Y
+	@debug "Y: " Y
 
 	if length(parameters) == 0
 		@error "No parameters specified for Parameter Homotopy!"
@@ -176,25 +182,28 @@ function main()
 
 	## ~ SYSTEM ~ ##
 
-	println("\ngenerating the polynomial system...")
-
+	
+	println("\ngenerating the loss function...")
 	L = utils.generate_loss_func(W_list, Λ_list, X, Y)
 	variables = utils.extract_and_sort_variables(W_list)
+	# @info "L: " L
 
+
+	println("\ngenerating the polynomial system...")
 	if first_layer_conv
 		p_list = utils.generate_gradient_polynomials_with_convolution(L, variables)
 	else
 		println("\ngenerating Uᵢ matrices...")
 		U_list = utils.generate_U_matrices(W_list)
-		@info "U_list: " U_list
+		@debug "U_list: " U_list
 
 		println("\ngenerating Vᵢ matrices...")
 		V_list = utils.generate_V_matrices(W_list)
-		@info "V_list: " V_list
+		@debug "V_list: " V_list
 
 		p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 	end
-	@info "polynomials: " p_list
+	@debug "polynomials: " p_list
 
 	∇L = System(p_list; parameters=parameters, variables=variables)	# variables are sorted lexicographically
 
@@ -213,29 +222,31 @@ function main()
 	@info "run # " run
 
 	println("\nParameter Homotopy: assigning start values...")
-	@info "Parameter Homotopy: assigning start values..."
 
-	start_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
+	params0 = utils.generate_param_values(a, b, Nx, Ny, regularize,
 		reg_parameterized, x_parameterized, y_parameterized,
 		Λ_list, X, Y; complex=start_params_complex) #  start params should be complex
 
-	@info "parameters(∇L) " parameters(∇L)
-	@info "start_params " start_params
+	@info "system parameters: " parameters(∇L)
+	@info "system parameter_values: " params0
 
 	println("\nParameter Homotopy: solving the initial system (polyhedral)...")
-	retval = @timed solve(∇L; target_parameters=start_params, threading=true)
+	retval = @timed solve(∇L; target_parameters=params0, threading=true)
 
 	result0 = retval.value
-	solve_time = retval.time
+	solve_time0 = retval.time
+	solutions0 = solutions(result0)
 
-	@info "solve_time: " solve_time
-	@info "result: " result0
-	@info "solutions: " solutions(result0)
+	@debug "solve_time: " solve_time0
+	@debug "result: " result0
+	@info "system variables: " variables
+	@info "system solutions: " solutions0
 
+	
 	println("\ncollecting sample results...")
-	global sample_results = utils.collect_results(sample_results, parsed_args,
-												  ∇L, result0)
-	@info "sample results: " sample_results
+	global sample_results = utils.collect_results(L, ∇L, result0, params0,
+		parsed_args, sample_results)
+	@debug "sample results: " sample_results
 
 	println("\nwriting sample results to file...")
 	row = string(run) * "," #  run number
@@ -263,28 +274,26 @@ function main()
 					@info "run # " run
 
 					println("\nParameter Homotopy: generating target params...")
-					@info "Parameter Homotopy: generating target params..."
 
-					target_params = utils.generate_param_values(a, b, Nx, Ny, regularize,
+					params1 = utils.generate_param_values(a, b, Nx, Ny, regularize,
 						reg_parameterized, x_parameterized, y_parameterized,
 						Λ_list, X, Y; complex=false) # subsequent params should be real
-					@info "target parameter list: " target_params
+					@info "system parameter_values: " params1
 
-					retval = @timed solve(∇L, solutions(result0);
-										  start_parameters=start_params,
-										  target_parameters=target_params,
-										  threading=true)
-					result = retval.value
-					solve_time = retval.time
+					retval = @timed solve(∇L, solutions0; start_parameters=params0,
+						target_parameters=params1, threading=true)
+					result1 = retval.value
+					solve_time1 = retval.time
+					solutions1 = solutions(result1)
 
-					@info "solve_time: " solve_time
-					@info "result: " result
-					@info "solutions: " solutions(result)
+					@debug "solve_time: " solve_time1
+					@debug "result: " result1
+					@info "solutions: " solutions1
 
 					println("\ncollecting sample results...")
-					global sample_results = utils.collect_results(
-						sample_results, parsed_args, ∇L, result)
-					@info "sample results: " sample_results
+					global sample_results = utils.collect_results(L, ∇L, result1, params1,
+						parsed_args, sample_results)
+					@debug "sample results: " sample_results
 
 					println("\nwriting sample results to file...")
 					row = generate_row(string(run), "row", parsed_args, sample_results)

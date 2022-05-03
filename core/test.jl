@@ -122,8 +122,19 @@ assert(utils.extract_and_sort_variables(vars)==[t1, w1])
 
 
 
+# test
+println("> utils.get_loss")
+@var x y p1 p2
+F = System([x^2 + y + p1, x - y + p2], variables=[x, y], parameters=[p1, p2])
+L = x^2 + y + p1 + p2^2
+var_values = [1, 2]
+param_values = [3, 4]
+assert(utils.get_loss(L, F, var_values, param_values)==22)
 
 
+
+# test
+# println("> utils.collect_results")
 
 
 
