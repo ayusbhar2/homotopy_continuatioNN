@@ -18,9 +18,8 @@ OUTPUT_FILE = "./output/output.csv"
 
 
 io = open(LOG_FILE, "w+")
-simple_logger = ConsoleLogger(io, show_limited=false)
+simple_logger = ConsoleLogger(io, Logging.Debug; show_limited=false)
 global_logger(simple_logger)
-disable_logging(Logging.Debug)
 
 
 sample_results = OrderedDict(
@@ -31,11 +30,13 @@ sample_results = OrderedDict(
 	"N_DM" => -1,
 	"N_R" => -1,
 	"L_min" => -1,
-	"W_min" => -1,
+	"L_min_sol_idx" => -1,
 	"L_max" => -1,
-	"W_max" => -1,
-	"var_names" => "",
-	"param_names" => ""
+	"L_min_sol_idx" => -1,
+	"max(I)" => -1,
+	"max(I)_sol_idx" => -1,
+	"min(I)" => -1,
+	"max(I)_sol_idx" => -1
 	)
 
 
@@ -179,7 +180,6 @@ function main()
 
 
 
-
 	## ~ SYSTEM ~ ##
 
 	
@@ -218,10 +218,8 @@ function main()
 
 	println("\nSTAGE # 1 ...")
 
-	run = 1
+	run = 0
 	@info "run # " run
-
-	println("\nParameter Homotopy: assigning start values...")
 
 	params0 = utils.generate_param_values(a, b, Nx, Ny, regularize,
 		reg_parameterized, x_parameterized, y_parameterized,
@@ -242,24 +240,10 @@ function main()
 	@info "system variables: " variables
 	@info "system solutions: " solutions0
 
-	
-	println("\ncollecting sample results...")
+
 	global sample_results = utils.collect_results(L, ∇L, result0, params0,
 		parsed_args, sample_results)
 	@debug "sample results: " sample_results
-
-	println("\nwriting sample results to file...")
-	row = string(run) * "," #  run number
-	for p in keys(parsed_args)
-		row = row * replace(string(parsed_args[p]), "," => "") * ","
-	end
-	for (k, v) in sample_results		# key order is fixed
-		 row = row * string(v) * ","
-	end
-	row = chop(row) * "\n"
-
-	f = open(OUTPUT_FILE, "a")
-	write(f, row)
 
 
 
@@ -267,39 +251,38 @@ function main()
 
 
 	try
-		if runcount > 1
-			println("\nSTAGE # 2...")
-			for run = 2:runcount
-		
-					@info "run # " run
+		println("\nSTAGE # 2...")
 
-					println("\nParameter Homotopy: generating target params...")
+		f = open(OUTPUT_FILE, "a")
+		for run = 1:runcount
+				@info "run # " run
 
-					params1 = utils.generate_param_values(a, b, Nx, Ny, regularize,
-						reg_parameterized, x_parameterized, y_parameterized,
-						Λ_list, X, Y; complex=false) # subsequent params should be real
-					@info "system parameter_values: " params1
+				params1 = utils.generate_param_values(a, b, Nx, Ny, regularize,
+					reg_parameterized, x_parameterized, y_parameterized,
+					Λ_list, X, Y; complex=false) # subsequent params should be real
+				@info "system parameter_values: " params1
 
-					retval = @timed solve(∇L, solutions0; start_parameters=params0,
-						target_parameters=params1, threading=true)
-					result1 = retval.value
-					solve_time1 = retval.time
-					solutions1 = solutions(result1)
+				println("\nParameter Homotopy: solving target system...")
+				retval = @timed solve(∇L, solutions0; start_parameters=params0,
+					target_parameters=params1, threading=true)
+				result1 = retval.value
+				solve_time1 = retval.time
+				solutions1 = solutions(result1)
 
-					@debug "solve_time: " solve_time1
-					@debug "result: " result1
-					@info "solutions: " solutions1
+				@debug "solve_time: " solve_time1
+				@debug "result: " result1
+				@info "solutions: " solutions1
 
-					println("\ncollecting sample results...")
-					global sample_results = utils.collect_results(L, ∇L, result1, params1,
-						parsed_args, sample_results)
-					@debug "sample results: " sample_results
+				println("\ncollecting sample results...")
+				global sample_results = utils.collect_results(L, ∇L, result1, params1,
+					parsed_args, sample_results)
+				@debug "sample results: " sample_results
 
-					println("\nwriting sample results to file...")
-					row = generate_row(string(run), "row", parsed_args, sample_results)
-					write(f, row)
-			end
+				println("\nwriting sample results to file...")
+				row = generate_row(string(run), "row", parsed_args, sample_results)
+				write(f, row)
 		end
+		
 	catch(e)
 		println(e)
 		@error e

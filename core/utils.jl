@@ -284,15 +284,16 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
 	sample_results["N_R"] = get_N_R(R)
 
-	# solution_list = solutions(F)
-	# loss_list = []
-	# for sol in solution_list
-	# 	loss = get_loss(L, F, sol, param_values)
-	# 	push!(loss_list, loss)
-	# end
-
-
-	# sample_results["L_min"] = 
+	solution_list = solutions(R)
+	loss_list = []
+	# Index_list = []
+	for sol in solution_list
+		loss = get_loss(L, F, sol, param_values)
+		push!(loss_list, loss)
+		# Index = get_I()
+	end
+	# println(loss_list)
+	# sample_results["L_min"] = minimum(loss_list)
 	# sample_results["L_max"] = 
 
 	return sample_results
