@@ -48,12 +48,12 @@ function get_loss(L, ∇L, solution, param_values)
 
 	var_names = variables(∇L)
 	param_names = parameters(∇L)
+
 	names = cat(var_names, param_names; dims=1)
-	# println("names: ", names)
 	values = cat(solution, param_values; dims=1)
-	# println("values: ", values)
 
 	l = evaluate(L, names => values)
+
 	return l
 
 end
@@ -284,17 +284,11 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
 	sample_results["N_R"] = get_N_R(R)
 
-	solution_list = solutions(R)
-	loss_list = []
-	# Index_list = []
-	for sol in solution_list
-		loss = get_loss(L, F, sol, param_values)
-		push!(loss_list, loss)
-		# Index = get_I()
-	end
-	# println(loss_list)
-	# sample_results["L_min"] = minimum(loss_list)
-	# sample_results["L_max"] = 
+	# r_solutions = solutions(R; only_real=true)
+	# for sol in r_solutions
+	# 	r_sol = map(real, sol)	# discard the imaginary part
+	# 	loss = get_loss(L, F, r_sol, param_values)
+	# end
 
 	return sample_results
 
@@ -356,9 +350,9 @@ function generate_loss_func(W_list, Λ_list, X, Y)
 		sum2 += get_norm_squared(M)
 	end
 
-	sum = sum1 + sum2
+	sum = 0.5*sum1 + 0.5*sum2
 
-	return (1/2) * sum
+	return sum
 
 end
 
@@ -374,7 +368,6 @@ function generate_gradient_polynomials_with_convolution(L, vars)
 end
 
 
-
 function make_variable(exp)
 	return Variable(exp)
 end
@@ -387,9 +380,6 @@ function extract_and_sort_variables(W_list)
 	# println(typeof(vars))
 	return vars
 end
-
-
-
 
 
 

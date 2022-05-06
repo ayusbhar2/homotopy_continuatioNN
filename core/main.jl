@@ -14,7 +14,7 @@ using Random
 CONFIG_FILE = "config.json"
 LOG_FILE = "./logs/log.txt"
 OUTPUT_FILE = "./output/output.csv"
-# Random.seed!(1234)
+Random.seed!(1235)
 
 
 io = open(LOG_FILE, "w+")
@@ -29,14 +29,14 @@ sample_results = OrderedDict(
 	"N_C" => -1,
 	"N_DM" => -1,
 	"N_R" => -1,
-	"L_min" => -1,
-	"L_min_sol_idx" => -1,
-	"L_max" => -1,
-	"L_min_sol_idx" => -1,
-	"max(I)" => -1,
-	"max(I)_sol_idx" => -1,
-	"min(I)" => -1,
-	"max(I)_sol_idx" => -1
+	"L_min" => -0.1
+	# "L_min_sol_idx" => -1,
+	# "L_max" => -1,
+	# "L_min_sol_idx" => -1,
+	# "max(I)" => -1,
+	# "max(I)_sol_idx" => -1,
+	# "min(I)" => -1,
+	# "max(I)_sol_idx" => -1
 	)
 
 
