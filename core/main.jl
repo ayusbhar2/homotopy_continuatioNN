@@ -28,14 +28,12 @@ sample_results = OrderedDict(
 	"N_C" => -1,
 	"N_DM" => -1,
 	"N_R" => -1,
-	"L_min" => -0.1
-	# "L_min_sol_idx" => -1,
-	# "L_max" => -1,
-	# "L_min_sol_idx" => -1,
-	# "max(I)" => -1,
-	# "max(I)_sol_idx" => -1,
-	# "min(I)" => -1,
-	# "max(I)_sol_idx" => -1
+	"L_values" => "",
+	"L_min" => -0.1,
+	"L_max" => -0.1,
+	"I_vals" => "",
+	"I_max" => -0.1,
+	"I_min" => -0.1
 	)
 
 

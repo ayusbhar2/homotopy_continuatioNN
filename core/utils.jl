@@ -2,7 +2,7 @@ module Utils
 
 using Distributions
 using HomotopyContinuation
-using LinearAlgebra: I
+using LinearAlgebra: I, eigvals
 using OrderedCollections
 
 
@@ -46,13 +46,18 @@ end
 function get_loss(L, ∇L, solution, param_values)
 	# compute loss for a single solution
 
+	println(L)
+
 	var_names = variables(∇L)
 	param_names = parameters(∇L)
 
 	names = cat(var_names, param_names; dims=1)
+	println(names)
 	values = cat(solution, param_values; dims=1)
+	println(values)
 
 	l = evaluate(L, names => values)
+	exit()
 
 	return l
 
@@ -284,11 +289,26 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
 	sample_results["N_R"] = get_N_R(R)
 
-	# r_solutions = solutions(R; only_real=true)
-	# for sol in r_solutions
-	# 	r_sol = map(real, sol)	# discard the imaginary part
-	# 	loss = get_loss(L, F, r_sol, param_values)
-	# end
+	loss_values = []
+	idx_values = []
+	r_solutions = solutions(R; only_real=true)
+	for sol in r_solutions
+		r_sol = map(real, sol)	# discard the imaginary part
+		loss = get_loss(L, F, r_sol, param_values)
+		push!(loss_values, loss)
+
+		J = jacobian(F, r_sol, param_values)
+		# println("J: ", J)
+		eigenvals = eigvals(J)
+		# println("eigenvals: ", eigenvals)
+
+
+
+	end
+
+	sample_results["L_values"] = loss_values
+	sample_results["L_min"] = minimum(loss_values)
+	sample_results["L_max"] = maximum(loss_values)
 
 	return sample_results
 
@@ -350,7 +370,8 @@ function generate_loss_func(W_list, Λ_list, X, Y)
 		sum2 += get_norm_squared(M)
 	end
 
-	sum = 0.5*sum1 + 0.5*sum2
+	sum = 0.5*(sum1 + sum2)
+	println("L: ", sum)
 
 	return sum
 
@@ -361,7 +382,7 @@ function generate_gradient_polynomials_with_convolution(L, vars)
 	l = []
 	for v in vars
 		dL_dv = differentiate(L, v)
-		# println("\n∂L/∂",v, " = ", dL_dv)
+		println("\n∂L/∂",v, " = ", dL_dv)
 		push!(l, dL_dv)
 	end
 	return l
