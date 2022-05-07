@@ -4,16 +4,17 @@
 	"m":1,
 	"dx":2,
 	"dy":2,
-	"first_layer_conv": true,
+	"convolution": true,
 	"stride":1,
 	"width":1,
 	"reg":true,
 	"reg_parameterized":true,
-	"x_parameterized":true,
-	"y_parameterized":true,
-	"start_params_complex":true,
 	"reg_dist_params":[0,1],
+	"x_parameterized":true,
 	"x_dist_params":[0,1],
+	"y_parameterized":true,
 	"y_dist_params":[0,1],
-	"runcount":2
+	"start_params_complex":true,
+	"runcount":2,
+	"fix_seed":false
 }

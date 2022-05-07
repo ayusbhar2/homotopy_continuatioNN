@@ -38,7 +38,7 @@ assert(W_list_actual[2][2,1]==w212)
 # test
 println("> utils.generate_weight_matrices_yes_conv")
 W_list_actual = utils.generate_weight_matrices(1, 2, 2, 1, 2; 
-	first_layer_conv=true, stride=1, width=1)
+	convolution=true, stride=1, width=1)
 @var t1
 
 assert(W_list_actual[1][1,1]==t1)

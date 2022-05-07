@@ -232,13 +232,13 @@ Output:
 W_list: (Vector{Matrix{Variable}}): List of weight matrices for the network
 """
 function generate_weight_matrices(H, dx, dy, m, di; 
-	first_layer_conv=false, stride=1, width=1)
+	convolution=false, stride=1, width=1)
 
 	W_list = Vector{Matrix}(undef, H+1)
 	for i = 1:(H+1)
 		s = "@var "
 		if i == 1
-			if first_layer_conv
+			if convolution
 				Wᵢ = generate_conv_layer(di, dx; stride=stride, width=width)
 			else
 				# define di * dx new variables and fill them into Wᵢ

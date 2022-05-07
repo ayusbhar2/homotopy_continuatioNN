@@ -14,7 +14,6 @@ using Random
 CONFIG_FILE = "config.json"
 LOG_FILE = "./logs/log.txt"
 OUTPUT_FILE = "./output/output.csv"
-Random.seed!(1235)
 
 
 io = open(LOG_FILE, "w+")
@@ -88,6 +87,10 @@ function main()
 
 	## ~ PRE-PROCESSING ~ ##
 
+	fix_seed = parsed_args["fix_seed"]
+	if fix_seed
+		Random.seed!(1234)
+	end
 	runcount = parsed_args["runcount"]
 
 	H = parsed_args["H"]
@@ -95,7 +98,7 @@ function main()
 	dx = parsed_args["dx"]
 	dy = parsed_args["dy"]
 	m = parsed_args["m"]
-	first_layer_conv = parsed_args["first_layer_conv"]
+	convolution = parsed_args["convolution"]
 	stride = parsed_args["stride"]
 	width = parsed_args["width"]
 
@@ -124,7 +127,7 @@ function main()
 	
 	println("\ngenerating Wᵢ matrices...")
 	W_list = utils.generate_weight_matrices(H, dx, dy, m, di;
-		first_layer_conv=first_layer_conv, stride=stride, width=width)
+		convolution=convolution, stride=stride, width=width)
 	@debug "W_list: " W_list
 
 
@@ -190,7 +193,7 @@ function main()
 
 
 	println("\ngenerating the polynomial system...")
-	if first_layer_conv
+	if convolution
 		p_list = utils.generate_gradient_polynomials_with_convolution(L, variables)
 	else
 		println("\ngenerating Uᵢ matrices...")
