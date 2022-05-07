@@ -6,8 +6,18 @@ using LinearAlgebra: I, eigvals
 using OrderedCollections
 
 
-function _matrix_to_varsting(W)
+function make_variable(exp)
+	return Variable(exp)
+end
 
+
+function extract_and_sort_variables(W_list)
+	vars = unique(collect(Iterators.flatten(W_list)))
+	vars = deleteat!(vars, vars .== 0)
+	vars = map(make_variable, vars)
+	vars = sort(vars)
+	# println(typeof(vars))
+	return vars
 end
 
 
@@ -81,6 +91,24 @@ function get_norm_squared(v)
 end
 
 
+function generate_parameter_matrix(m, n, name)
+	s = string("@var ", name, "[1:", m, ",1:", n, "]")
+	t = eval(Meta.parse(s))
+	# println(t[1])
+	return t[1]
+end
+
+
+function generate_zero_matrices(W_list)
+	Λ_list = Any[]
+	for i =1:length(W_list)
+		Λᵢ = zeros(size(W_list[i]))
+		# println("Λ", i, " :", size(Λᵢ))
+		push!(Λ_list, Λᵢ)
+	end
+	return Λ_list
+end
+
 
 function generate_real_Tikhonov_matrices(a, b, W_list)
 	Λ_list = Any[]
@@ -105,31 +133,12 @@ function generate_complex_Tikhonov_matrices(W_list)
 end
 
 
-function generate_parameter_matrix(m, n, name)
-	s = string("@var ", name, "[1:", m, ",1:", n, "]")
-	t = eval(Meta.parse(s))
-	# println(t[1])
-	return t[1]
-end
-
-
 function generate_parameterized_Tikhonov_matrices(W_list)
 
 	Λ_list = Any[]
 	for i =1:length(W_list)
 		m = size(W_list[i])[1]; n = size(W_list[i])[2]
 		Λᵢ = generate_parameter_matrix(m, n, "λ$i")
-		# println("Λ", i, " :", size(Λᵢ))
-		push!(Λ_list, Λᵢ)
-	end
-	return Λ_list
-end
-
-
-function generate_zero_matrices(W_list)
-	Λ_list = Any[]
-	for i =1:length(W_list)
-		Λᵢ = zeros(size(W_list[i]))
 		# println("Λ", i, " :", size(Λᵢ))
 		push!(Λ_list, Λᵢ)
 	end
@@ -174,24 +183,6 @@ function generate_V_matrices(W_list)
 	return V_list
 end
 
-
-# TODO: kwargs
-function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
-	p_list = Any[]
-	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
-	for i = 1:length(W_list)
-		∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
-		# println("∂L_Wᵢ :", ∂L_Wᵢ)
-
-		v = vec(∂L_Wᵢ)
-		for p in v
-			# println("p: ", p)
-			push!(p_list, p)
-		end
-	end
-
-	return p_list
-end
 
 function generate_conv_layer(di, dx; stride=1, width=1)
 	if (di - 1) * stride + width > dx
@@ -278,41 +269,60 @@ function generate_weight_matrices(H, dx, dy, m, di;
 	return W_list
 end
 
-function collect_results(L, F::System, R::Result, param_values, parsed_args, sample_results)
 
-	n = nvariables(F)
-	H = parsed_args["H"]
-
-	sample_results["n"] = n
-	sample_results["CBB"] = get_CBB(F)
-	sample_results["N_C"] = get_N_C(R)
-	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
-	sample_results["N_R"] = get_N_R(R)
-
-	loss_values = []
-	idx_values = []
-	r_solutions = solutions(R; only_real=true)
-	for sol in r_solutions
-		r_sol = map(real, sol)	# discard the imaginary part
-		loss = get_loss(L, F, r_sol, param_values)
-		push!(loss_values, loss)
-
-		J = jacobian(F, r_sol, param_values)
-		# println("J: ", J)
-		eigenvals = eigvals(J)
-		# println("eigenvals: ", eigenvals)
-
-
-
+function generate_loss_func(W_list, Λ_list, X, Y)
+	W = reduce(*, reverse(W_list))
+	sum1 = 0
+	for i = 1:size(X)[2]
+		x = X[:, i]
+		y = Y[:, i]
+		v = W * x - y
+		sum1 = sum1 + get_norm_squared(v)
 	end
 
-	sample_results["L_values"] = loss_values
-	sample_results["L_min"] = minimum(loss_values)
-	sample_results["L_max"] = maximum(loss_values)
+	sum2 = 0
+	for i = 1:length(W_list)
+		M = W_list[i] .* Λ_list[i]
+		sum2 += get_norm_squared(M)
+	end
 
-	return sample_results
+	sum = 0.5*(sum1 + sum2)
+	# println("L: ", sum)
+
+	return sum
 
 end
+
+
+function generate_gradient_polynomials_with_convolution(L, vars)
+	l = []
+	for v in vars
+		dL_dv = differentiate(L, v)
+		println("\n∂L/∂",v, " = ", dL_dv)
+		push!(l, dL_dv)
+	end
+	return l
+end
+
+
+# TODO: kwargs
+function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
+	p_list = Any[]
+	W = reduce(*, reverse(W_list))	# weight matrices are multiplied in reverse order
+	for i = 1:length(W_list)
+		∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
+		# println("∂L_Wᵢ :", ∂L_Wᵢ)
+
+		v = vec(∂L_Wᵢ)
+		for p in v
+			# println("p: ", p)
+			push!(p_list, p)
+		end
+	end
+
+	return p_list
+end
+
 
 function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_parameterized,
 							   y_parameterized,
@@ -354,52 +364,32 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 end
 
 
-function generate_loss_func(W_list, Λ_list, X, Y)
-	W = reduce(*, reverse(W_list))
-	sum1 = 0
-	for i = 1:size(X)[2]
-		x = X[:, i]
-		y = Y[:, i]
-		v = W * x - y
-		sum1 = sum1 + get_norm_squared(v)
+function collect_results(L, F::System, R::Result, param_values, parsed_args, sample_results)
+
+	n = nvariables(F)
+	H = parsed_args["H"]
+
+	sample_results["n"] = n
+	sample_results["CBB"] = get_CBB(F)
+	sample_results["N_C"] = get_N_C(R)
+	sample_results["N_DM"] = convert(Int64, ceil(get_N_DM(H, n)))
+	sample_results["N_R"] = get_N_R(R)
+
+	loss_values = []
+	idx_values = []
+	r_solutions = solutions(R; only_real=true)
+	for sol in r_solutions
+		r_sol = map(real, sol)	# discard the imaginary part
+		loss = get_loss(L, F, r_sol, param_values)
+		push!(loss_values, loss)
 	end
 
-	sum2 = 0
-	for i = 1:length(W_list)
-		M = W_list[i] .* Λ_list[i]
-		sum2 += get_norm_squared(M)
-	end
+	sample_results["L_values"] = loss_values
+	sample_results["L_min"] = minimum(loss_values)
+	sample_results["L_max"] = maximum(loss_values)
 
-	sum = 0.5*(sum1 + sum2)
-	println("L: ", sum)
+	return sample_results
 
-	return sum
-
-end
-
-
-function generate_gradient_polynomials_with_convolution(L, vars)
-	l = []
-	for v in vars
-		dL_dv = differentiate(L, v)
-		println("\n∂L/∂",v, " = ", dL_dv)
-		push!(l, dL_dv)
-	end
-	return l
-end
-
-
-function make_variable(exp)
-	return Variable(exp)
-end
-
-function extract_and_sort_variables(W_list)
-	vars = unique(collect(Iterators.flatten(W_list)))
-	vars = deleteat!(vars, vars .== 0)
-	vars = map(make_variable, vars)
-	vars = sort(vars)
-	# println(typeof(vars))
-	return vars
 end
 
 
