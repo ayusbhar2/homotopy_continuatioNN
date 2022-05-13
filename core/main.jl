@@ -28,30 +28,32 @@ sample_results = OrderedDict(
 	"N_C" => -1,
 	"N_DM" => -1,
 	"N_R" => -1,
+	"Real_sols" => "",
 	"L_values" => "",
-	"L_min" => -0.1,
-	"L_max" => -0.1,
-	"I_vals" => "",
-	"I_max" => -0.1,
-	"I_min" => -0.1
+	"Idx_vals" => "",
+	"L_min" => "",
+	"L_max" => "",
+	"Idx_max" => "",
+	"Idx_min" => ""
 	)
 
 
 function generate_row(col1, type, parsed_args, sample_results)
-	row = string(col1) * ","
+	delim = "&"
+	row = string(col1) * delim
 
 	for (k, v) in parsed_args
 		if type == "row"
-			row = row * replace(string(v), "," => "") * ","
+			row = row * replace(string(v), "," => "") * delim
 		elseif type == "header"
-			row = row * string(k) * ","
+			row = row * string(k) * delim
 		end
 	end
 	for (k, v) in sample_results
 		if type == "row"
-			row = row * string(v) * ","
+			row = row * string(v) * delim
 		elseif type == "header"
-			row = row * string(k) * ","
+			row = row * string(k) * delim
 		end
 	end
 	row = chop(row) * "\n"
@@ -242,9 +244,9 @@ function main()
 	@info "system solutions: " solutions0
 
 
-	global sample_results = utils.collect_results(L, ∇L, result0, params0,
-		parsed_args, sample_results)
-	@debug "sample results: " sample_results
+	# global sample_results = utils.collect_results(L, ∇L, result0, params0,
+	# 	parsed_args, sample_results)
+	# @debug "sample results: " sample_results
 
 
 
@@ -256,32 +258,32 @@ function main()
 
 		f = open(OUTPUT_FILE, "a")
 		for run = 1:runcount
-				@info "run # " run
+			@info "run # " run
 
-				params1 = utils.generate_param_values(a, b, Nx, Ny, regularize,
-					reg_parameterized, x_parameterized, y_parameterized,
-					Λ_list, X, Y; complex=false) # subsequent params should be real
-				@info "system parameter_values: " params1
+			params1 = utils.generate_param_values(a, b, Nx, Ny, regularize,
+				reg_parameterized, x_parameterized, y_parameterized,
+				Λ_list, X, Y; complex=false) # subsequent params should be real
+			@info "system parameter_values: " params1
 
-				println("\nParameter Homotopy: solving target system...")
-				retval = @timed solve(∇L, solutions0; start_parameters=params0,
-					target_parameters=params1, threading=true)
-				result1 = retval.value
-				solve_time1 = retval.time
-				solutions1 = solutions(result1)
+			println("\nParameter Homotopy: solving target system...")
+			retval = @timed solve(∇L, solutions0; start_parameters=params0,
+				target_parameters=params1, threading=true)
+			result1 = retval.value
+			solve_time1 = retval.time
+			solutions1 = solutions(result1)
 
-				@debug "solve_time: " solve_time1
-				@debug "result: " result1
-				@info "solutions: " solutions1
+			@debug "solve_time: " solve_time1
+			@debug "result: " result1
+			@info "solutions: " solutions1
 
-				println("\ncollecting sample results...")
-				global sample_results = utils.collect_results(L, ∇L, result1, params1,
-					parsed_args, sample_results)
-				@debug "sample results: " sample_results
+			println("\ncollecting sample results...")
+			global sample_results = utils.collect_results(L, ∇L, result1, params1,
+				parsed_args, sample_results)
+			@debug "sample results: " sample_results
 
-				println("\nwriting sample results to file...")
-				row = generate_row(string(run), "row", parsed_args, sample_results)
-				write(f, row)
+			println("\nwriting sample results to file...")
+			row = generate_row(string(run), "row", parsed_args, sample_results)
+			write(f, row)
 		end
 		
 	catch(e)
@@ -290,6 +292,8 @@ function main()
 	finally
 		close(f)
 	end
+
+
 
 end
 

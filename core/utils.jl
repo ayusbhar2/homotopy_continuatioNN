@@ -6,6 +6,23 @@ using LinearAlgebra: I, eigvals
 using OrderedCollections
 
 
+function to_number_exp(p)
+	return to_number(expand(p))
+end
+
+
+function eval_poly(f, args)
+  f_args = evaluate(f, args)
+  if f_args isa Expression
+     return to_number(expand(f_args))
+  elseif (f_args isa Vector{Expression} || f_args isa Matrix{Expression})
+  	 return map(to_number_exp, f_args)  # apply to_number_exp() element-wise
+  else
+     return f_args
+  end
+end
+
+
 function make_variable(exp)
 	return Variable(exp)
 end
@@ -52,26 +69,6 @@ function get_N_DM(H, n)
 	sqrt(2) * (2*H+1)^((n+1)/2)
 end
 
-
-function get_loss(L, ∇L, solution, param_values)
-	# compute loss for a single solution
-
-	println(L)
-
-	var_names = variables(∇L)
-	param_names = parameters(∇L)
-
-	names = cat(var_names, param_names; dims=1)
-	println(names)
-	values = cat(solution, param_values; dims=1)
-	println(values)
-
-	l = evaluate(L, names => values)
-	exit()
-
-	return l
-
-end
 
 function get_norm_squared(v)
 	if length(size(v)) > 1  # matrix
@@ -298,7 +295,7 @@ function generate_gradient_polynomials_with_convolution(L, vars)
 	l = []
 	for v in vars
 		dL_dv = differentiate(L, v)
-		println("\n∂L/∂",v, " = ", dL_dv)
+		# println("\n∂L/∂",v, " = ", dL_dv)
 		push!(l, dL_dv)
 	end
 	return l
@@ -368,6 +365,8 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 
 	n = nvariables(F)
 	H = parsed_args["H"]
+	J = jacobian(F)
+	names = cat(variables(F), parameters(F); dims=1)
 
 	sample_results["n"] = n
 	sample_results["CBB"] = get_CBB(F)
@@ -377,16 +376,31 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 
 	loss_values = []
 	idx_values = []
-	r_solutions = solutions(R; only_real=true)
-	for sol in r_solutions
-		r_sol = map(real, sol)	# discard the imaginary part
-		loss = get_loss(L, F, r_sol, param_values)
+	r_sols = []
+	real_solutions = solutions(R; only_real=true)
+
+	for real_sol in real_solutions
+		r_sol = map(real, real_sol)	# discard the imaginary part
+		push!(r_sols, r_sol)
+
+		values = cat(r_sol, param_values; dims=1)
+		loss = eval_poly(L, names => values)
 		push!(loss_values, loss)
+
+		jac = eval_poly(J, names => values)
+		idx = sum(e<=0 for e in eigvals(jac))
+		push!(idx_values, idx)
 	end
 
+	sample_results["Real_sols"] = r_sols
 	sample_results["L_values"] = loss_values
 	sample_results["L_min"] = minimum(loss_values)
 	sample_results["L_max"] = maximum(loss_values)
+
+	sample_results["Idx_vals"] = idx_values
+	sample_results["Idx_min"] = minimum(idx_values)
+	sample_results["Idx_max"] = maximum(idx_values)
+
 
 	return sample_results
 
