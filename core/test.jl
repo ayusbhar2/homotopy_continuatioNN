@@ -71,11 +71,11 @@ X = [x11 x12; x21 x22]
 Y = [y11 y12; y21 y22]
 
 s = eval(Meta.parse("""
-	0.5*(l111^2*w111^2 + l112^2*w112^2 + l211^2*w211^2 + l221^2*w221^2) + 
-	0.5*((-y11 + x11*w111*w211 + x21*w112*w211)^2 + 
-		 (-y12 + x12*w111*w211 + x22*w112*w211)^2 + 
-		 (-y21 + x11*w111*w221 + x21*w112*w221)^2 + 
-		 (-y22 + x12*w111*w221 + x22*w112*w221)^2)
+	0.5*(l111^2*w111^2 + l112^2*w112^2 + l211^2*w211^2 + l221^2*w221^2 + 
+		(-y11 + x11*w111*w211 + x21*w112*w211)^2 + 
+		(-y12 + x12*w111*w211 + x22*w112*w211)^2 + 
+		(-y21 + x11*w111*w221 + x21*w112*w221)^2 + 
+		(-y22 + x12*w111*w221 + x22*w112*w221)^2)
 	"""))
 
 assert(utils.generate_loss_func(W_list, Λ_list, X, Y) == s)
@@ -122,19 +122,28 @@ assert(utils.extract_and_sort_variables(vars)==[t1, w1])
 
 
 
-# test
-println("> utils.get_loss")
-@var x y p1 p2
-F = System([x^2 + y + p1, x - y + p2], variables=[x, y], parameters=[p1, p2])
-L = x^2 + y + p1 + p2^2
-var_values = [1, 2]
-param_values = [3, 4]
-assert(utils.get_loss(L, F, var_values, param_values)==22)
-
+#test
+println("> utils.eval_poly_scalar")
+@var x y
+L = 0.5*(x + y)
+result = utils.eval_poly(L, [x, y] => [1, 1])
+assert(result==1.0)
+assert(typeof(result)==Float64)
 
 
 # test
-# println("> utils.collect_results")
+println("> utils.eval_poly_matrix")
+@var x1 x2 x3 x4
+names = [x1, x2, x3, x4]
+values = [-1.0, -0.1, 0.2, -0.7]
+J = [1.0*x1^2*x2^2 + 1.0*x3^2, 1.0*x1^2*x4*x2]
+result = utils.eval_poly(J, names => values)
+println("result: ", result)
+assert(typeof(result[1])==Float64)
+assert(typeof(result[2])==Float64)
+
+
+
 
 
 
