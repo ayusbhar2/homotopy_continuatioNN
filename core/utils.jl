@@ -2,8 +2,9 @@ module Utils
 
 using Distributions
 using HomotopyContinuation
-using LinearAlgebra: I, eigvals
+using LinearAlgebra: I, eigvals, issymmetric
 using OrderedCollections
+
 
 
 function to_number_exp(p)
@@ -144,6 +145,7 @@ end
 
 
 function generate_U_matrices(W_list)
+	# NOTE: does not transpose the U matrices
 	U_list = Any[]
 	len = length(W_list)
 
@@ -310,7 +312,7 @@ function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
 		∂L_Wᵢ = transpose(U_list[i]) * (W * X * transpose(X) - Y * transpose(X)) * transpose(V_list[i]) + Λ_list[i] .* W_list[i]
 		# println("∂L_Wᵢ :", ∂L_Wᵢ)
 
-		v = vec(∂L_Wᵢ)
+		v = vec(transpose(∂L_Wᵢ))	# Julia arrays are column major
 		for p in v
 			# println("p: ", p)
 			push!(p_list, p)

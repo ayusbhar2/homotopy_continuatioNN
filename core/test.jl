@@ -2,6 +2,7 @@ include("utils.jl")
 import .Utils as utils
 
 using HomotopyContinuation
+using LinearAlgebra: I, eigvals
 
 
 function assert(condition; msg="")
@@ -131,6 +132,7 @@ assert(result==1.0)
 assert(typeof(result)==Float64)
 
 
+
 # test
 println("> utils.eval_poly_matrix")
 @var x1 x2 x3 x4
@@ -144,6 +146,50 @@ assert(typeof(result[2])==Float64)
 
 
 
+#test
+println("> utils.generate_U_matrices")
+W1 = [1 2; 3 4]
+W2 = [5 6; 7 8]
+W_list = [W1, W2]
+U_list_exp = [W2, I]
+U_list_act = utils.generate_U_matrices(W_list)
+assert(U_list_act[1]==U_list_exp[1])
+assert(U_list_act[2]==U_list_exp[2])
 
+
+
+#test
+println("> utils.generate_V_matrices")
+W1 = [1 2; 3 4]
+W2 = [5 6; 7 8]
+W_list = [W1, W2]
+V_list_exp = [I, W1]
+V_list_act = utils.generate_V_matrices(W_list)
+assert(V_list_act[1]==V_list_exp[1])
+assert(V_list_act[2]==V_list_exp[2])
+
+
+
+# test
+println("> utils.generate_gradient_polynomials_no_conv")
+@var w1 w2 w3 w4 z1 z2 z3 z4
+
+W1 = [w1 w2; w3 w4]
+W2 = [z1 z2; z3 z4]
+
+Λ1 = [1 2; 3 4]
+Λ2 = [5 6; 7 8]
+
+X = [-1 2; 3 4]
+Y = [5 6; 7 8]
+
+W_list = [W1, W2]
+U_list = [W2, I]
+V_list = [I, W1]
+Λ_list = [Λ1, Λ2]
+
+# order or polys should not be scrambled
+p_list = utils.generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
+assert(p_list[2]==2*w2 + (-53 + 3*(-(w1*z3 + w3*z4) + 3*(w2*z3 + w4*z4)) + 4*(2*(w1*z3 + w3*z4) + 4*(w2*z3 + w4*z4)))*z3 + (-39 + 3*(-(w1*z1 + w3*z2) + 3*(w2*z1 + w4*z2)) + 4*(2*(w1*z1 + w3*z2) + 4*(w2*z1 + w4*z2)))*z1)
 
 
