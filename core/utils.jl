@@ -6,6 +6,20 @@ using LinearAlgebra: I, eigvals, issymmetric
 using OrderedCollections
 
 
+function real_and_nonpositive(e)
+	r = real(e)
+	if r == e
+		if r <= 0
+			retval = true
+		else
+			retval = false
+		end
+	else
+		retval = false
+	end
+	return retval
+end
+
 
 function to_number_exp(p)
 	return to_number(expand(p))
@@ -390,7 +404,8 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 		push!(loss_values, loss)
 
 		jac = eval_poly(J, names => values)
-		idx = sum(e<=0 for e in eigvals(jac))
+		evals = eigvals(jac)
+		idx = sum(real_and_nonpositive.(evals))
 		push!(idx_values, idx)
 	end
 
