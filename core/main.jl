@@ -214,7 +214,8 @@ function main()
 	println("\ntotal number of variables: ", length(variables))
 	println("\ntotal number of parameters: ", length(parameters))
 
-
+	bkk = paths_to_track(∇L)
+	sample_results["BKK"] = bkk
 
 
 	## ~ STAGE 1 ~ ##

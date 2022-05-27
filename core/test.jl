@@ -138,7 +138,7 @@ names = [x1, x2, x3, x4]
 values = [-1.0, -0.1, 0.2, -0.7]
 J = [1.0*x1^2*x2^2 + 1.0*x3^2, 1.0*x1^2*x4*x2]
 result = utils.eval_poly(J, names => values)
-println("result: ", result)
+# println("result: ", result)
 assert(typeof(result[1])==Float64)
 assert(typeof(result[2])==Float64)
 
