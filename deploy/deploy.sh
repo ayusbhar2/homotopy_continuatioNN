@@ -35,9 +35,9 @@ echo "REMINDER: Ensure that the setup file has the right parameters.."
 
 if [[ "$1" != "--source-only" ]]
 then
-	TYPE=$1
+	TYPE=$1 # c5.9xlarge (36 thr), c5.4xlarge (16 thr)
 	COUNT=$2
-	TAG=$3
+	TAG=$3 # di2H1m1dx2dy5_noconv
 
 	if [ -z "$1" ]
 	then
