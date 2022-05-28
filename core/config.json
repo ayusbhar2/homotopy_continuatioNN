@@ -4,7 +4,7 @@
 	"m":1,
 	"dx":2,
 	"dy":2,
-	"convolution": true,
+	"convolution": false,
 	"stride":1,
 	"width":1,
 	"reg":true,
@@ -16,5 +16,5 @@
 	"y_dist_params":[0,1],
 	"start_params_complex":true,
 	"runcount":2,
-	"fix_seed":false
+	"fix_seed":true
 }

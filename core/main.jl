@@ -30,11 +30,7 @@ sample_results = OrderedDict(
 	"N_R" => -1,
 	"Real_sols" => "",
 	"L_values" => "",
-	"Idx_vals" => "",
-	"L_min" => "",
-	"L_max" => "",
-	"Idx_max" => "",
-	"Idx_min" => ""
+	"Idx_vals" => ""
 	)
 
 

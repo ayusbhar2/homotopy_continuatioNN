@@ -400,12 +400,7 @@ function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_a
 
 	sample_results["Real_sols"] = r_sols
 	sample_results["L_values"] = loss_values
-	sample_results["L_min"] = minimum(loss_values)
-	sample_results["L_max"] = maximum(loss_values)
-
 	sample_results["Idx_vals"] = idx_values
-	sample_results["Idx_min"] = minimum(idx_values)
-	sample_results["Idx_max"] = maximum(idx_values)
 
 
 	return sample_results
