@@ -183,6 +183,7 @@ function main()
 
 
 
+
 	## ~ SYSTEM ~ ##
 
 	
@@ -191,7 +192,6 @@ function main()
 	variables = utils.extract_and_sort_variables(W_list)
 	grad_L = differentiate(L, variables)
 	∇²L = differentiate(grad_L, variables)
-
 
 	println("\ngenerating the polynomial system...")
 	if convolution

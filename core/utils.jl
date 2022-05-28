@@ -371,7 +371,6 @@ function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_a
 
 	n = nvariables(F)
 	H = parsed_args["H"]
-	# J = jacobian(F)
 	names = cat(variables(F), parameters(F); dims=1)
 
 	sample_results["n"] = n
