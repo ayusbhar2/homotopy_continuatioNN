@@ -4,7 +4,7 @@
 	"m":1,
 	"dx":2,
 	"dy":2,
-	"convolution": true,
+	"convolution": false,
 	"stride":1,
 	"width":1,
 	"reg":true,

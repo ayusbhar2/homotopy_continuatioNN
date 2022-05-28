@@ -307,16 +307,6 @@ function generate_loss_func(W_list, Λ_list, X, Y)
 end
 
 
-function generate_gradient_polynomials_with_convolution(L, vars)
-	l = []
-	for v in vars
-		dL_dv = differentiate(L, v)
-		# println("\n∂L/∂",v, " = ", dL_dv)
-		push!(l, dL_dv)
-	end
-	return l
-end
-
 
 # TODO: kwargs
 function generate_gradient_polynomials(W_list, U_list, V_list, Λ_list, X, Y)
@@ -377,11 +367,11 @@ function generate_param_values(a, b, Nx, Ny, regularize, reg_parameterized, x_pa
 end
 
 
-function collect_results(L, F::System, R::Result, param_values, parsed_args, sample_results)
+function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_args, sample_results)
 
 	n = nvariables(F)
 	H = parsed_args["H"]
-	J = jacobian(F)
+	# J = jacobian(F)
 	names = cat(variables(F), parameters(F); dims=1)
 
 	sample_results["n"] = n
@@ -403,8 +393,8 @@ function collect_results(L, F::System, R::Result, param_values, parsed_args, sam
 		loss = eval_poly(L, names => values)
 		push!(loss_values, loss)
 
-		jac = eval_poly(J, names => values)
-		evals = eigvals(jac)
+		hess = eval_poly(∇²L, names => values)
+		evals = eigvals(hess)
 		idx = sum(real_and_nonpositive.(evals))
 		push!(idx_values, idx)
 	end

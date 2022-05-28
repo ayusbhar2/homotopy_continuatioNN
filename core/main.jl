@@ -189,12 +189,13 @@ function main()
 	println("\ngenerating the loss function...")
 	L = utils.generate_loss_func(W_list, Λ_list, X, Y)
 	variables = utils.extract_and_sort_variables(W_list)
-	# @info "L: " L
+	grad_L = differentiate(L, variables)
+	∇²L = differentiate(grad_L, variables)
 
 
 	println("\ngenerating the polynomial system...")
 	if convolution
-		p_list = utils.generate_gradient_polynomials_with_convolution(L, variables)
+		p_list = grad_L
 	else
 		println("\ngenerating Uᵢ matrices...")
 		U_list = utils.generate_U_matrices(W_list)
@@ -216,6 +217,8 @@ function main()
 
 	bkk = paths_to_track(∇L)
 	sample_results["BKK"] = bkk
+
+
 
 
 	## ~ STAGE 1 ~ ##
@@ -244,10 +247,6 @@ function main()
 	@info "system variables: " variables
 	@info "system solutions: " solutions0
 
-
-	# global sample_results = utils.collect_results(L, ∇L, result0, params0,
-	# 	parsed_args, sample_results)
-	# @debug "sample results: " sample_results
 
 
 
@@ -278,7 +277,7 @@ function main()
 			@info "solutions: " solutions1
 
 			println("\ncollecting sample results...")
-			global sample_results = utils.collect_results(L, ∇L, result1, params1,
+			global sample_results = utils.collect_results(L, ∇L, ∇²L, result1, params1,
 				parsed_args, sample_results)
 			@debug "sample results: " sample_results
 
