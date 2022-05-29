@@ -40,7 +40,7 @@ function generate_row(col1, type, parsed_args, sample_results)
 
 	for (k, v) in parsed_args
 		if type == "row"
-			row = row * replace(string(v), "," => "") * delim
+			row = row * string(v) * delim
 		elseif type == "header"
 			row = row * string(k) * delim
 		end
