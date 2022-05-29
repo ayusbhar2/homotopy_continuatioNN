@@ -27,17 +27,17 @@ do
   echo "$dns_name"
 	
 	echo "Collecting output..."
-	dir_out="$OUTPUT_LOCATION/output_$TAG-$i"
-	mkdir $dir_out
+	# dir_out="$OUTPUT_LOCATION/output_$TAG-$i"
+	# mkdir $dir_out
 	scp -i $CERT_FILE "ec2-user@$dns_name:$REMOTE_LOCATION/core/output/output.csv" \
-		"$dir_out/output_$TAG-$i.csv"
+		"$OUTPUT_LOCATION/output_$TAG-$i.csv"
 
 	# collect logs from instance
 	echo "Collecting logs..."
-	dir_log="$LOGS_LOCATION/log_$TAG-$i"
-	mkdir $dir_log
+	# dir_log="$LOGS_LOCATION/log_$TAG-$i"
+	# mkdir $dir_log
 	scp -i $CERT_FILE "ec2-user@$dns_name:$REMOTE_LOCATION/core/logs/log.txt" \
-		"$dir_log/log_$TAG-$i.txt"
+		"$OUTPUT_LOCATION/log_$TAG-$i.txt"
 done
 
 echo "Done!"
