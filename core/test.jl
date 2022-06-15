@@ -11,6 +11,8 @@ function assert(condition; msg="")
 	end
 end
 
+
+
 # test
 println("> utils.generate_conv_layer")
 @var t1, t2
@@ -22,6 +24,33 @@ if !(W_expected == W_actual)
 		Expecting: $W_expected
 		REceived: $W_actual""")
 end
+
+
+# test
+println("> utils._reshape_rowmajor")
+@var a b c d
+M = utils._reshape_rowmajor([a, b, c, d], 2, 2)
+assert(M[1,1]==a)
+assert(M[1,2]==b)
+assert(M[2,1]==c)
+assert(M[2,2]==d)
+
+
+
+# test
+println("> utils._varstring_to_matrix")
+
+s = "@var a b c d e f"
+W = utils._varstring_to_matrix(s, 2, 3)
+
+@var a b c d e f
+assert(W[1,1] == a)
+assert(W[1,2] == b)
+assert(W[1,3] == c)
+assert(W[2,1] == d)
+assert(W[2,2] == e)
+assert(W[2,3] == f)
+
 
 
 # test
@@ -97,19 +126,6 @@ W_list = [W1, W2]
 X = [-1 2; 3 4]
 Y = [5 6; 7 8]
 assert(utils.generate_loss_func(W_list, Λ_list, X, Y)==1751.5)
-
-
-
-# test
-println("> utils.generate_gradient_polynomials_with_convolution")
-@var w111 w112 w211 w221
-
-vars = [w111 w112 w211 w221]
-L = w111^2 + w112^2 + w211^2 + w221^2
-
-p_list = utils.generate_gradient_polynomials_with_convolution(L, vars)
-assert(p_list==[2*w111, 2*w112, 2*w211, 2*w221])
-
 
 
 # test
