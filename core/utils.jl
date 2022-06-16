@@ -53,10 +53,23 @@ function extract_and_sort_variables(W_list)
 end
 
 
+function _reshape_rowmajor(v, m, n)
+	M = Matrix{Variable}(undef, m, n)
+	i = 0
+	while i < m
+		row = v[i*n+1:(i+1)*n]
+		M[i+1, :] = row
+		i += 1
+	end
+	return M
+end
+
+
 function _varstring_to_matrix(s, m, n)
 	t = eval(Meta.parse(s))
 	v = collect(t)
-	return reshape(v, (m, n))
+	return _reshape_rowmajor(v, m, n)
+
 end
 
 
@@ -245,6 +258,7 @@ function generate_weight_matrices(H, dx, dy, m, di;
 
 	W_list = Vector{Matrix}(undef, H+1)
 	for i = 1:(H+1)
+		# println("## i = ", i)
 		s = "@var "
 		if i == 1
 			if convolution
@@ -253,27 +267,30 @@ function generate_weight_matrices(H, dx, dy, m, di;
 				# define di * dx new variables and fill them into Wᵢ
 				for j = 1:di
 					for k = 1:dx
-						s = string(s,"w",i,k,j, " ")
+						s = string(s,"w",i,j,k, " ")
 					end
 				end
 				Wᵢ = _varstring_to_matrix(s, di, dx)
+				# println("W", i, " :\n", Wᵢ)
 			end
 		elseif i == H+1
 			# define dy * di new variables and fill them into Wᵢ
 			for j = 1:dy
 				for k = 1:di
-					s = string(s,"w",i,k,j, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, dy, di)
+			# println("W", i, " :\n", Wᵢ)
 		else
 			# define di * di new variables and fill them into Wᵢ
 			for j = 1:di
 				for k = 1:di
-					s = string(s,"w",i,k,j, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, di, di)
+			# println("W", i, " :\n", Wᵢ)
 		end
 		W_list[i] = Wᵢ
 		# println(string("W", i," :", size(Wᵢ)))
