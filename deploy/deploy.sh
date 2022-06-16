@@ -12,7 +12,7 @@
 # export REPO_NAME="core"
 # export SEC_GRP="<IAM-security-group-name>"
 # export TAG_KEY="<whatever-you-want>"
-# export TAR_FILE_NAME="core.tar.gz"
+export TAR_FILE_PREFIX="core"
 
 
 
@@ -37,7 +37,7 @@ if [[ "$1" != "--source-only" ]]
 then
 	TYPE=$1 # c5.9xlarge (36 thr), c5.4xlarge (16 thr)
 	COUNT=$2
-	TAG=$3 # di2H1m1dx2dy5_noconv
+	TAG=$3 # di2H1m4dx4dy4_noconv
 
 	if [ -z "$1" ]
 	then
@@ -56,6 +56,11 @@ then
 		echo "TAG not provided..."
 		exit 0
 	fi
+
+	# Archive code to deploy
+	echo "Archiving code for deployment..."
+	TAR_FILE_NAME="$TAR_FILE_PREFIX-$TAG.tar.gz"
+	tar czf $TAR_FILE_NAME -C $REPO_LOCATION  $REPO_NAME
 
 	
     # Create instances
@@ -115,11 +120,6 @@ then
 		done
 		sleep 10
 	done
-
-
-	# Archive code to deploy
-	echo "Archiving code for deployment..."
-	tar czf $TAR_FILE_NAME -C $REPO_LOCATION  $REPO_NAME
 
 
 	# Deploy code to each instance
