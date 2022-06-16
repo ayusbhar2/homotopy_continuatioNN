@@ -390,6 +390,7 @@ function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_a
 	H = parsed_args["H"]
 	names = cat(variables(F), parameters(F); dims=1)
 
+	sample_results["variables"] = variables(F)
 	sample_results["n"] = n
 	sample_results["CBB"] = get_CBB(F)
 	sample_results["N_C"] = get_N_C(R)
@@ -399,6 +400,7 @@ function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_a
 	loss_values = []
 	idx_values = []
 	r_sols = []
+	all_solutions = solutions(R)
 	real_solutions = solutions(R; only_real=true)
 
 	for real_sol in real_solutions
@@ -415,6 +417,7 @@ function collect_results(L, F::System, ∇²L, R::Result, param_values, parsed_a
 		push!(idx_values, idx)
 	end
 
+	sample_results["All_sols"] = all_solutions
 	sample_results["Real_sols"] = r_sols
 	sample_results["L_values"] = loss_values
 	sample_results["Idx_vals"] = idx_values

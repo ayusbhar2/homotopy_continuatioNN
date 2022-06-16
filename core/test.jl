@@ -77,7 +77,6 @@ assert(W_list_actual[1][2,1]==w121)
 assert(W_list_actual[2][1,1]==w211)
 assert(W_list_actual[2][1,2]==w212)
 
-
 ## Case 3
 W_list_actual = utils.generate_weight_matrices(1, 3, 1, 1, 2)
 
@@ -95,6 +94,26 @@ assert(W_list_actual[1][2,3]==w123)
 
 assert(W_list_actual[2][1,1]==w211)
 assert(W_list_actual[2][1,2]==w212)
+
+## Case 4
+W_list_actual = utils.generate_weight_matrices(2, 1, 1, 1, 2)
+
+assert(size(W_list_actual[1])==(2, 1))
+assert(size(W_list_actual[2])==(2, 2))
+assert(size(W_list_actual[3])==(1, 2))
+
+@var w111 w121 w211 w212 w221 w222 w311 w312
+
+assert(W_list_actual[1][1,1]==w111)
+assert(W_list_actual[1][2,1]==w121)
+
+assert(W_list_actual[2][1,1]==w211)
+assert(W_list_actual[2][1,2]==w212)
+assert(W_list_actual[2][2,1]==w221)
+assert(W_list_actual[2][2,2]==w222)
+
+assert(W_list_actual[3][1,1]==w311)
+assert(W_list_actual[3][1,2]==w312)
 
 
 
@@ -164,6 +183,19 @@ assert(utils.extract_and_sort_variables(vars)==[t1])
 
 vars = [[w1 0; 0 w1], [t1 0; 0 t1]]
 assert(utils.extract_and_sort_variables(vars)==[t1, w1])
+
+@var w111 w112 w113 w121 w122 w123 w211 w212
+W1 = [w111 w112 w113; w121 w122 w123]
+vars_exp = [w111, w112, w113, w121, w122, w123]
+vars_act = utils.extract_and_sort_variables(W1)
+assert(vars_act == vars_exp)
+
+W2 = [w211 w212]
+W_list = [W1, W2]
+vars_exp = [w111, w112, w113, w121, w122, w123, w211, w212]
+vars_act = utils.extract_and_sort_variables(W_list)
+println(vars_act)
+assert(vars_act == vars_exp)
 
 
 
