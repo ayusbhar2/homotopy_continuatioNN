@@ -22,6 +22,7 @@ global_logger(simple_logger)
 
 
 sample_results = OrderedDict(
+	"variables"=>"",
 	"n" => -1,
 	"CBB" => -1,
 	"BKK" => -1,
@@ -29,6 +30,7 @@ sample_results = OrderedDict(
 	"N_DM" => -1,
 	"N_R" => -1,
 	"Real_sols" => "",
+	"All_sols" => "",
 	"L_values" => "",
 	"Idx_vals" => ""
 	)
