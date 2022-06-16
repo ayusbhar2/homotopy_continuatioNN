@@ -13,7 +13,6 @@ end
 
 
 
-# test
 println("> utils.generate_conv_layer")
 @var t1, t2
 W_expected = Matrix([t1 t2 0 0; 0 0 t1 t2])
@@ -26,7 +25,7 @@ if !(W_expected == W_actual)
 end
 
 
-# test
+
 println("> utils._reshape_rowmajor")
 @var a b c d
 M = utils._reshape_rowmajor([a, b, c, d], 2, 2)
@@ -37,9 +36,7 @@ assert(M[2,2]==d)
 
 
 
-# test
 println("> utils._varstring_to_matrix")
-
 s = "@var a b c d e f"
 W = utils._varstring_to_matrix(s, 2, 3)
 
@@ -53,19 +50,54 @@ assert(W[2,3] == f)
 
 
 
-# test
 println("> utils.generate_weight_matrices_no_conv")
+##  Case 1
 W_list_actual = utils.generate_weight_matrices(1, 2, 2, 1, 1)
+
+assert(size(W_list_actual[1])==(1, 2))
+assert(size(W_list_actual[2])==(2, 1))
+
+@var w111 w112 w211 w221
+
+assert(W_list_actual[1][1,1]==w111)
+assert(W_list_actual[1][1,2]==w112)
+assert(W_list_actual[2][1,1]==w211)
+assert(W_list_actual[2][2,1]==w221)
+
+##  Case 2
+W_list_actual = utils.generate_weight_matrices(1, 1, 1, 1, 2)
+
+assert(size(W_list_actual[1])==(2, 1))
+assert(size(W_list_actual[2])==(1, 2))
+
 @var w111 w121 w211 w212
 
 assert(W_list_actual[1][1,1]==w111)
-assert(W_list_actual[1][1,2]==w121)
+assert(W_list_actual[1][2,1]==w121)
 assert(W_list_actual[2][1,1]==w211)
-assert(W_list_actual[2][2,1]==w212)
+assert(W_list_actual[2][1,2]==w212)
+
+
+## Case 3
+W_list_actual = utils.generate_weight_matrices(1, 3, 1, 1, 2)
+
+assert(size(W_list_actual[1])==(2, 3))
+assert(size(W_list_actual[2])==(1, 2))
+
+@var w111 w112 w113 w121 w122 w123 w211 w212
+
+assert(W_list_actual[1][1,1]==w111)
+assert(W_list_actual[1][1,2]==w112)
+assert(W_list_actual[1][1,3]==w113)
+assert(W_list_actual[1][2,1]==w121)
+assert(W_list_actual[1][2,2]==w122)
+assert(W_list_actual[1][2,3]==w123)
+
+assert(W_list_actual[2][1,1]==w211)
+assert(W_list_actual[2][1,2]==w212)
 
 
 
-# test
 println("> utils.generate_weight_matrices_yes_conv")
 W_list_actual = utils.generate_weight_matrices(1, 2, 2, 1, 2; 
 	convolution=true, stride=1, width=1)
@@ -84,9 +116,7 @@ assert(W_list_actual[2][2,2]==w222)
 
 
 
-# test
 println("> utils.generate_loss_func_with_variables")
-
 @var w111 w112 w211 w221 l111 l112 l211 l221 x11 x12 x21 x22 y11 y12 y21 y22
 
 W1 = [w111 w112]
@@ -112,9 +142,7 @@ assert(utils.generate_loss_func(W_list, Λ_list, X, Y) == s)
 
 
 
-# test
 println("> utils.generate_loss_func_with_constants")
-
 W1 = [1 2] 
 W2 = [3; 4]
 W_list = [W1, W2]
@@ -128,7 +156,7 @@ Y = [5 6; 7 8]
 assert(utils.generate_loss_func(W_list, Λ_list, X, Y)==1751.5)
 
 
-# test
+
 println("> utils.extract_and_sort_variables")
 @var t1 w1
 vars = [t1, 0, 0, t1]
@@ -139,7 +167,6 @@ assert(utils.extract_and_sort_variables(vars)==[t1, w1])
 
 
 
-#test
 println("> utils.eval_poly_scalar")
 @var x y
 L = 0.5*(x + y)
@@ -149,7 +176,6 @@ assert(typeof(result)==Float64)
 
 
 
-# test
 println("> utils.eval_poly_matrix")
 @var x1 x2 x3 x4
 names = [x1, x2, x3, x4]
@@ -162,7 +188,6 @@ assert(typeof(result[2])==Float64)
 
 
 
-#test
 println("> utils.generate_U_matrices")
 W1 = [1 2; 3 4]
 W2 = [5 6; 7 8]
@@ -174,7 +199,6 @@ assert(U_list_act[2]==U_list_exp[2])
 
 
 
-#test
 println("> utils.generate_V_matrices")
 W1 = [1 2; 3 4]
 W2 = [5 6; 7 8]
@@ -186,7 +210,6 @@ assert(V_list_act[2]==V_list_exp[2])
 
 
 
-# test
 println("> utils.generate_gradient_polynomials_no_conv")
 @var w1 w2 w3 w4 z1 z2 z3 z4
 

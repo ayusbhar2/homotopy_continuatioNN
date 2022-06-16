@@ -267,7 +267,7 @@ function generate_weight_matrices(H, dx, dy, m, di;
 				# define di * dx new variables and fill them into Wᵢ
 				for j = 1:di
 					for k = 1:dx
-						s = string(s,"w",i,k,j, " ")
+						s = string(s,"w",i,j,k, " ")
 					end
 				end
 				Wᵢ = _varstring_to_matrix(s, di, dx)
@@ -277,7 +277,7 @@ function generate_weight_matrices(H, dx, dy, m, di;
 			# define dy * di new variables and fill them into Wᵢ
 			for j = 1:dy
 				for k = 1:di
-					s = string(s,"w",i,k,j, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, dy, di)
@@ -286,7 +286,7 @@ function generate_weight_matrices(H, dx, dy, m, di;
 			# define di * di new variables and fill them into Wᵢ
 			for j = 1:di
 				for k = 1:di
-					s = string(s,"w",i,k,j, " ")
+					s = string(s,"w",i,j,k, " ")
 				end
 			end
 			Wᵢ = _varstring_to_matrix(s, di, di)
