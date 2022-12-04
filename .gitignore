@@ -3,6 +3,5 @@ output/
 logs/
 .DS_Store
 *.gz
-cloud_output/
+# cloud_output/
 cloud_logs/
-
