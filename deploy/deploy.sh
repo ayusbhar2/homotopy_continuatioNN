@@ -5,10 +5,10 @@
 # export CERT_FILE="/full/path/to/cert_file.cer"
 # export IMAGE_ID="<amazon-image-id>"
 # export KEY_NAME="<ec2 key-name>"
-# export LOGS_LOCATION="<full-path-to-directory>/homotopy_continuation/deploy/cloud_logs"
-# export OUTPUT_LOCATION="<full-path-to-directory>/homotopy_continuation/deploy/cloud_output"
+# export LOGS_LOCATION="<full-path-to-directory>/homotopy_continuatioNN/deploy/cloud_logs"
+# export OUTPUT_LOCATION="<full-path-to-directory>/homotopy_continuatioNN/deploy/cloud_output"
 # export REMOTE_LOCATION="~"
-# export REPO_LOCATION="<full-path-to-directory>/homotopy_continuation"
+# export REPO_LOCATION="<full-path-to-directory>/homotopy_continuatioNN"
 # export REPO_NAME="core"
 # export SEC_GRP="<IAM-security-group-name>"
 # export TAG_KEY="<whatever-you-want>"
@@ -37,7 +37,7 @@ if [[ "$1" != "--source-only" ]]
 then
 	TYPE=$1 # c5.9xlarge (36 thr), c5.4xlarge (16 thr)
 	COUNT=$2
-	TAG=$3 # di2H1m4dx4dy4_noconv
+	TAG=$3 # di1H1m1dx4dy2_noconv
 
 	if [ -z "$1" ]
 	then
