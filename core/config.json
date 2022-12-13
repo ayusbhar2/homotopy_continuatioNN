@@ -1,9 +1,9 @@
 {	
-	"di":2,
+	"di":1,
 	"H":1,
 	"m":1,
-	"dx":10,
-	"dy":2,
+	"dx":1,
+	"dy":1,
 	"convolution": false,
 	"stride":1,
 	"width":1,
