@@ -2,9 +2,9 @@
 
 This code is meant to generate and solve *gradient polynomial systems* arising out of deep linear (identity activation) neural networks as described in this thesis - https://github.com/ayusbhar2/mathematics_masters_thesis.
 
-For a particular network architecture, the solutions to the gradient polynomial system are precisely the complex critical points of the loss function of the network.
+For a particular network architecture, the solutions to the gradient polynomial system are precisely the complex critical points of the loss function of the network. In order the explore the properties of these critical points, we examine the solutions to $100$ randomly generated gradient polynomial systems for each network architecture.
 
-Each instance handles a specific network architecture. Multiple instances can be created in parallel. The code running on each instance randomly generates polynomial systems for the specified architecture and records the solutions as well as metadata about the solutions.
+Each Amazon EC2 instance handles a specific network architecture. Multiple instances can be created in parallel. The code running on each instance randomly generates polynomial systems for the specified architecture and records the solutions as well as metadata about the solutions.
 
 
 Setup:
