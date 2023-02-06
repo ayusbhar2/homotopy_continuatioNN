@@ -272,10 +272,7 @@ data = data.assign(N1_N = data['N_1']/data['N_R'])
 
 data.shape
 
-"""# Analysis
-
-## Networks with H=1, m=1
-"""
+"""# Analysis"""
 
 def get_subspaces(sample, real_only=False):
   """Find distinct subspaces in the solution set."""
@@ -425,6 +422,19 @@ def format_weight_matrices(W_list):
     i -= 1
   return s
 
+# # Don't reverse the weight matrices when displaying
+# def format_weight_matrices(W_list):
+#   W_temp = W_list.copy()
+#   W_temp.reverse()
+#   s = ''
+#   i = 1
+#   for W in W_temp:
+#     cap = "W"+str(i)
+#     styler = prettify(pd.DataFrame(W), caption=cap)
+#     s += styler._repr_html_()
+#     i += 1
+#   return s
+
 def analyze(sample):
   subs = get_subspaces(sample, real_only=False)
 
@@ -434,19 +444,15 @@ def analyze(sample):
 
     # print stuff
     display_html(stl2, raw=True)
-    print("subspace dim: {}".format(dimension(eval(k))))
+    # print("subspace dim: {}".format(dimension(eval(k))))
     print("solution count: {}\n\n".format(v))
 
-sample = data[(data.di==2) &
-              (data.H==1) &
-              (data.m==1) &
-              (data.dx==2) &
-              (data.dy==2)].loc[62]
+
 
 case = data[(data.di==2) &
-              (data.H==1) &
-              (data.m==1) &
-              (data.dx==2) &
+              (data.H==2) &
+              (data.m==2) &
+              (data.dx==1) &
               (data.dy==2)]
 
 """### Analyzing the case"""
@@ -456,28 +462,6 @@ case.columns
 case.N_R.max()
 
 case.N_R.hist()
-
-d = dict()
-for i in range(0, case.N_R.max()+1):
-  d[i] = 0
-for x in case.N_R:
-    d[x] += 1
-
-print(d.keys())
-print(d.values())
-
-from matplotlib import pyplot as plt
-fig = plt.figure(figsize = (8, 8))
-
-plt.bar(d.keys(), d.values(), width=1.5)
-plt.xlabel("Real solution count", fontsize=14)
-plt.ylabel("Number of samples", fontsize=14)
-plt.title("Frequency distribution of real solutions", fontsize=14)
-plt.show()
-
-counts, bins = np.histogram(case.N_R)
-
-counts, bins
 
 import operator as op
 from functools import reduce
@@ -501,9 +485,9 @@ def get_B_C(d,p):
 
 ##### PRINT CASE #####
 rows = []
-for H in range(1, 2):
-  for m in range(1, 2):
-    for di in range(3, 4):
+for di in range(1, 4):
+  for H in range(1, 3):
+    for m in range(1, 3):
       for dy in range(1, 5):
         for dx in range(1, 5):
           case = data[(data.di==di) &
@@ -513,9 +497,13 @@ for H in range(1, 2):
                 (data.dy==dy)]
           if len(case) > 0:
             N_R_max = case.N_R.max()
-            B_C_start = get_B_C_start(di, dy)
-            B_C = get_B_C(di, dy) + 1
-
+            if H ==1 & m ==1:
+              B_C_start = get_B_C_start(di, dy)
+              B_C = get_B_C(di, dy) + 1
+            else:
+              B_C_start = -1
+              B_C = -1
+            
             case = case[['di', 'H', 'm', 'dx', 'dy', 'n','CBB', 'BKK', 'N_C', 'N_C_star']]
             # print(" ############ di={}, H={}, m={}, dx={}, dy={} ############\n".format(di, H, m, dx, dy))
 
@@ -539,9 +527,10 @@ for H in range(1, 2):
     # break
   # break
 
-df_table = pd.DataFrame(rows)
+df_table = pd.DataFrame(rows).sort_values(by=['H', 'di', 'dx', 'dy', 'm'])
 
-df_table[['H',
+df_table[[
+          'H',
           'm',
           'di',
           'dx',
@@ -559,26 +548,33 @@ df_table[['H',
 
 """### Analyzing the sample"""
 
-view_solutions(sample)
+sample = data[(data.di==2) &
+              (data.H==2) &
+              (data.m==2) &
+              (data.dx==1) &
+              (data.dy==2)].loc[62]
+
+# view_solutions(sample)
 
 analyze(sample)
 
 
 
 # ~ PRINT COORDINATE DECOMPOSITIONS ~ #
-for di in range(1, 4):
-  for H in range(1, 4):
-    for dx in range(1, 4):
-      for dy in range(1, 4):
-        try:
-          sample = data[(data.di==di) &
-                        (data.H==H) &
-                        (data.m==1) &
-                        (data.dx==dx) &
-                        (data.dy==dy)].loc[67]
-          print(" ####################### di={}, H={}, m={}, dx={}, dy={} #####################\n".format(di, H, 1, dx, dy))
-          analyze(sample)
-        except:
-          print("Missing: di={}, H={}, dx={}, dy={}. Ignoring...\n".format(di, H, dx, dy))
-          pass
+for di in range(2, 3):
+  for H in range(2, 3):
+    for m in range(2, 3):
+      for dy in range(1, 5):
+        for dx in range(1, 5):
+          try:
+            sample = data[(data.di==di) &
+                          (data.H==H) &
+                          (data.m==m) &
+                          (data.dx==dx) &
+                          (data.dy==dy)].loc[67]
+            print(" ####################### di={}, H={}, m={}, dx={}, dy={} #####################\n".format(di, H, m, dx, dy))
+            analyze(sample)
+          except:
+            print("Not available: di={}, H={}, m={}, dx={}, dy={}. Ignoring...\n".format(di, H, m, dx, dy))
+            pass
 
