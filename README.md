@@ -1,6 +1,6 @@
-# Investigating Optimization Landscape of Deep Linear Networks using Homotopy Continuation Methods
+# Complex Critical Points of Deep Linear Neural Networks
 
-This code is meant to generate and solve *gradient polynomial systems* arising out of deep linear (identity activation) neural networks as described in this [thesis](https://github.com/ayusbhar2/mathematics_masters_thesis).
+This code is meant to generate and solve *gradient polynomial systems* arising out of deep linear (identity activation) neural networks as described in this [thesis](https://github.com/ayusbhar2/mathematics_masters_thesis) and the resulting [paper](https://arxiv.org/abs/2301.12651).
 
 For a particular network architecture, the solutions to the gradient polynomial system are precisely the complex critical points of the loss function of the network. In order the explore the properties of these critical points, we examine the solutions to $100$ randomly generated gradient polynomial systems for each network architecture.
 
